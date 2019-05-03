@@ -14,4 +14,4 @@ FROM alpine:latest
 
 COPY --from=builder /go/bin/alertmanager /bin/
 
-ENTRYPOINT [ "/bin//alertmanager" ]
+ENTRYPOINT [ "/bin/alertmanager" ]
