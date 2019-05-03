@@ -5,10 +5,10 @@ import "time"
 type AlertmanagerConfig struct {
 	// TODO: Add id for containing multiple config for single user
 
-	Config              string `json:"config"`
+	Config              string            `json:"config"`
 	TemplateFiles       map[string]string `json:"templateFiles,omitempty"`
-	UpdatedAtInUnix     int64 `json:"updatedAtInUnix,omitempty"`
-	DeactivatedAtInUnix int64 `json:"deactivatedAtInUnix,omitempty"`
+	UpdatedAtInUnix     int64             `json:"updatedAtInUnix,omitempty"`
+	DeactivatedAtInUnix int64             `json:"deactivatedAtInUnix,omitempty"`
 }
 
 type AlertmanagerClient interface {
@@ -22,7 +22,6 @@ type AlertmanagerClient interface {
 
 	RestoreConfig(userID string) error
 }
-
 
 type Inmem struct {
 	storage map[string]AlertmanagerConfig
@@ -54,7 +53,7 @@ func (m *Inmem) GetAllConfigs() (map[string]AlertmanagerConfig, error) {
 	return resp, nil
 }
 
-func (m *Inmem) GetAllConfigsUpdatedOrDeletedAfter(after int64) (map[string]AlertmanagerConfig, error)  {
+func (m *Inmem) GetAllConfigsUpdatedOrDeletedAfter(after int64) (map[string]AlertmanagerConfig, error) {
 	resp := map[string]AlertmanagerConfig{}
 	for uid, a := range m.storage {
 		if a.DeactivatedAtInUnix <= 0 && a.UpdatedAtInUnix > after {
@@ -64,7 +63,7 @@ func (m *Inmem) GetAllConfigsUpdatedOrDeletedAfter(after int64) (map[string]Aler
 	return resp, nil
 }
 
-func (m *Inmem) SetConfig(userID string, config AlertmanagerConfig) error  {
+func (m *Inmem) SetConfig(userID string, config AlertmanagerConfig) error {
 	config.UpdatedAtInUnix = time.Now().Unix()
 	m.storage[userID] = config
 	return nil

@@ -3,13 +3,14 @@ package alertmanager
 import (
 	"context"
 	"fmt"
-	"github.com/prometheus/alertmanager/cluster"
 	"net/http"
 	"net/url"
 	"path"
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/prometheus/alertmanager/cluster"
 
 	"github.com/go-kit/kit/log"
 	api "github.com/prometheus/alertmanager/api/v1"
@@ -37,7 +38,7 @@ type Config struct {
 	Logger      log.Logger
 	Retention   time.Duration
 	ExternalURL *url.URL
-	Peer *cluster.Peer
+	Peer        *cluster.Peer
 }
 
 // An Alertmanager manages the alerts for one user.

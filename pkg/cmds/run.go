@@ -1,8 +1,9 @@
 package cmds
 
 import (
-	"github.com/searchlight/alertmanager/pkg/alertmanager"
 	"net/http"
+
+	"github.com/searchlight/alertmanager/pkg/alertmanager"
 
 	"github.com/searchlight/alertmanager/pkg/logger"
 
@@ -33,7 +34,6 @@ func NewCmdRun() *cobra.Command {
 			}
 			go multiAM.Run()
 			defer multiAM.Stop()
-
 
 			amAPI := alertmanager.NewAPI(amClient)
 

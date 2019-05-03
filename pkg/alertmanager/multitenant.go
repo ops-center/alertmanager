@@ -29,27 +29,27 @@ var backoffConfig = util.BackoffConfig{
 
 var (
 	totalConfigs = prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "cortex",
+		Namespace: "appscode",
 		Name:      "configs",
 		Help:      "How many configs the multitenant alertmanager knows about.",
 	})
 	configsRequestDuration = instrument.NewHistogramCollector(prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Namespace: "cortex",
+		Namespace: "appscode",
 		Name:      "configs_request_duration_seconds",
 		Help:      "Time spent requesting configs.",
 		Buckets:   prometheus.DefBuckets,
 	}, []string{"operation", "status_code"}))
-	totalPeers = prometheus.NewGauge(prometheus.GaugeOpts{
-		Namespace: "cortex",
-		Name:      "mesh_peers",
-		Help:      "Number of peers the multitenant alertmanager knows about",
-	})
+	//totalPeers = prometheus.NewGauge(prometheus.GaugeOpts{
+	//	Namespace: "appscode",
+	//	Name:      "mesh_peers",
+	//	Help:      "Number of peers the multitenant alertmanager knows about",
+	//})
 )
 
 func init() {
 	configsRequestDuration.Register()
 	prometheus.MustRegister(totalConfigs)
-	prometheus.MustRegister(totalPeers)
+	// prometheus.MustRegister(totalPeers)
 }
 
 // A MultitenantAlertmanager manages Alertmanager instances for multiple
@@ -260,7 +260,7 @@ func (am *MultitenantAlertmanager) setConfig(userID string, config *Alertmanager
 }
 
 func (am *MultitenantAlertmanager) newAlertmanager(userID string, amConfig *amconfig.Config) (*Alertmanager, error) {
-	u, err := url.Parse(am.cfg.ExternalURL)
+	u, err := url.Parse(am.cfg.PathPrefix)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse external url: %v", err)
 	}
