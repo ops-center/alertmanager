@@ -1,0 +1,45 @@
+package: github.com/searchlight/alertmanager
+import:
+- package: github.com/go-kit/kit
+  subpackages:
+  - log
+  - log/level
+- package: github.com/prometheus/client_golang
+  version: v0.9.1
+  subpackages:
+    - prometheus
+- package: github.com/prometheus/common
+  subpackages:
+  - config
+  - model
+  version: v0.2.0
+- package: github.com/prometheus/alertmanager
+  version: v0.16.2
+- package: github.com/prometheus/prometheus
+  version: v2.8.1
+  subpackages:
+  - config
+  - discovery
+  - discovery/config
+  - discovery/dns
+  - discovery/targetgroup
+  - notifier
+  - pkg/labels
+  - promql
+  - rules
+  - storage
+  - util/strutil
+- package: golang.org/x/net
+  subpackages:
+  - context
+  - context/ctxhttp
+- package: github.com/gogo/protobuf
+  version: v1.2.0
+  subpackages:
+    - proto
+- package: github.com/gophercloud/gophercloud
+  version: bd754a35
+- package: github.com/hashicorp/memberlist
+  version: v0.1.3
+- package: github.com/google/btree
+  version: v1.0.0
