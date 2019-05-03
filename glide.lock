@@ -1,0 +1,298 @@
+hash: 124fa83e5d6f931aff3c80aad10e91fc947003c34c8894125dd7a8e628699b13
+updated: 2019-05-03T12:55:15.531992691+06:00
+imports:
+- name: github.com/armon/go-metrics
+  version: ec5e00d3c878b2a97bbe0884ef45ffd1b4f669f5
+- name: github.com/beorn7/perks
+  version: 3ac7bf7a47d159a033b107610db8a1b6575507a4
+  subpackages:
+  - quantile
+- name: github.com/blang/semver
+  version: 1a9109f8c4a1d669a78442f567dfe8eedf982793
+- name: github.com/cenkalti/backoff
+  version: 1e4cf3da559842a91afcb6ea6141451e6c30c618
+- name: github.com/cespare/xxhash
+  version: 48099fad606eafc26e3a569fad19ff510fff4df6
+- name: github.com/codahale/hdrhistogram
+  version: 3a0bb77429bd3a61596f5e8a3172445844342120
+- name: github.com/cortexproject/cortex
+  version: 2c5518f086f88915e7269a212188b235984b0207
+  subpackages:
+  - pkg/prom1/storage/metric
+  - pkg/util
+- name: github.com/go-kit/kit
+  version: a9ca6725cbbea455e61c6bc8a1ed28e81eb3493b
+  subpackages:
+  - log
+  - log/level
+- name: github.com/go-logfmt/logfmt
+  version: 432dd90af23366a89a611c020003fc8ba281ae5d
+- name: github.com/go-stack/stack
+  version: 54be5f394ed2c3e19dac9134a40a95ba5a017f7b
+- name: github.com/gogo/googleapis
+  version: d31c731455cb061f42baff3bda55bad0118b126b
+  subpackages:
+  - google/rpc
+- name: github.com/gogo/protobuf
+  version: 4cbf7e384e768b4e01799441fdf2a706a5635ae7
+  subpackages:
+  - gogoproto
+  - proto
+  - protoc-gen-gogo/descriptor
+  - sortkeys
+  - types
+- name: github.com/gogo/status
+  version: 935308aef7372e7685e8fbee162aae8f7a7e515a
+- name: github.com/golang/glog
+  version: 44145f04b68cf362d9c4df2182967c2275eaefed
+- name: github.com/golang/protobuf
+  version: b4deda0973fb4c70b50d226b1af49f3da59f5265
+  subpackages:
+  - proto
+  - ptypes
+  - ptypes/any
+  - ptypes/duration
+  - ptypes/empty
+  - ptypes/timestamp
+- name: github.com/golang/snappy
+  version: 553a641470496b2327abcac10b36396bd98e45c9
+- name: github.com/google/btree
+  version: 4030bb1f1f0c35b30ca7009e9ebd06849dd45306
+- name: github.com/gophercloud/gophercloud
+  version: bd754a358bac4c1f48ff6b8d794fbf732883d879
+- name: github.com/gorilla/mux
+  version: a7962380ca08b5a188038c69871b8d3fbdf31e89
+- name: github.com/grpc-ecosystem/go-grpc-middleware
+  version: cfaf5686ec79ff8344257723b6f5ba1ae0ffeb4d
+- name: github.com/hashicorp/errwrap
+  version: 8a6fb523712970c966eefc6b39ed2c5e74880354
+- name: github.com/hashicorp/go-immutable-radix
+  version: 27df80928bb34bb1b0d6d0e01b9e679902e7a6b5
+- name: github.com/hashicorp/go-msgpack
+  version: ad60660ecf9c5a1eae0ca32182ed72bab5807961
+  subpackages:
+  - codec
+- name: github.com/hashicorp/go-multierror
+  version: 886a7fbe3eb1c874d46f623bfa70af45f425b3d1
+- name: github.com/hashicorp/go-sockaddr
+  version: c7188e74f6acae5a989bdc959aa779f8b9f42faf
+- name: github.com/hashicorp/golang-lru
+  version: a0d98a5f288019575c6d1f4bb1573fef2d1fcdc4
+  subpackages:
+  - simplelru
+- name: github.com/hashicorp/memberlist
+  version: a9da52f0668fc4321ec18e9e28dd8141621a808f
+- name: github.com/inconshreveable/mousetrap
+  version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
+- name: github.com/julienschmidt/httprouter
+  version: 26a05976f9bf5c3aa992cc20e8588c359418ee58
+- name: github.com/kr/logfmt
+  version: b84e30acd515aadc4b783ad4ff83aff3299bdfe0
+- name: github.com/matttproud/golang_protobuf_extensions
+  version: c12348ce28de40eed0136aa2b644d0ee0650e56c
+  subpackages:
+  - pbutil
+- name: github.com/miekg/dns
+  version: 8fc2e5773bbd308ca2fcc962fd8d25c1bd0f6743
+- name: github.com/mwitkow/go-conntrack
+  version: cc309e4a22231782e8893f3c35ced0967807a33e
+- name: github.com/oklog/oklog
+  version: ca7cdf51fb41fbc290986e9a24db4fa644ab0714
+  subpackages:
+  - pkg/group
+- name: github.com/oklog/run
+  version: 6934b124db28979da51d3470dadfa34d73d72652
+- name: github.com/oklog/ulid
+  version: 1fe95fa015d44afc8cd427914daadb0317481b71
+- name: github.com/opentracing-contrib/go-grpc
+  version: 4b5a12d3ff02ba61ae861b7797e17a0c4f0ecea9
+- name: github.com/opentracing-contrib/go-stdlib
+  version: 77df8e8e70b403c6b13c0fffaa4867c9044ff4e9
+  subpackages:
+  - nethttp
+- name: github.com/opentracing/opentracing-go
+  version: 659c90643e714681897ec2521c60567dd21da733
+  subpackages:
+  - ext
+  - log
+- name: github.com/pkg/errors
+  version: 645ef00459ed84a119197bfb8d8205042c6df63d
+- name: github.com/prometheus/alertmanager
+  version: 308b7620642dc147794e6686a3f94d1b6fc8ef4d
+  subpackages:
+  - api/v1
+  - asset
+  - cluster
+  - cluster/clusterpb
+  - config
+  - dispatch
+  - inhibit
+  - nflog
+  - nflog/nflogpb
+  - notify
+  - pkg/parse
+  - provider
+  - provider/mem
+  - silence
+  - silence/silencepb
+  - store
+  - template
+  - types
+  - ui
+- name: github.com/prometheus/client_golang
+  version: abad2d1bd44235a26707c172eab6bca5bf2dbad3
+  subpackages:
+  - prometheus
+  - prometheus/internal
+  - prometheus/promauto
+  - prometheus/promhttp
+- name: github.com/prometheus/client_model
+  version: fa8ad6fec33561be4280a8f0514318c79d7f6cb6
+  subpackages:
+  - go
+- name: github.com/prometheus/common
+  version: cfeb6f9992ffa54aaa4f2170ade4067ee478b250
+  subpackages:
+  - config
+  - expfmt
+  - internal/bitbucket.org/ww/goautoneg
+  - model
+  - route
+  - version
+- name: github.com/prometheus/procfs
+  version: 65c1f6f8f0fc1e2185eb9863a3bc751496404259
+  subpackages:
+  - xfs
+- name: github.com/prometheus/prometheus
+  version: 4d60eb36dcbed725fcac5b27018574118f12fffb
+  subpackages:
+  - config
+  - discovery
+  - discovery/config
+  - discovery/dns
+  - discovery/targetgroup
+  - notifier
+  - pkg/labels
+  - promql
+  - rules
+  - storage
+  - util/strutil
+- name: github.com/satori/go.uuid
+  version: f58768cc1a7a7e77a3bd49e98cdd21419399b6a3
+- name: github.com/sean-/seed
+  version: e2103e2c35297fb7e17febb81e49b312087a2372
+- name: github.com/sercand/kuberesolver
+  version: 93f6fd85e473ae1b5f538428345c038d26572fa8
+- name: github.com/shurcooL/httpfs
+  version: 74dc9339e414ad069a8d04bba7e7aafd08043a25
+  subpackages:
+  - filter
+  - union
+  - vfsutil
+- name: github.com/shurcooL/vfsgen
+  version: 6a9ea43bcacdf716a5c1b38efff722c07adf0069
+- name: github.com/sirupsen/logrus
+  version: 89742aefa4b206dcf400792f3bd35b542998eb3b
+- name: github.com/spf13/cobra
+  version: ef82de70bb3f60c65fb8eebacbb2d122ef517385
+- name: github.com/spf13/pflag
+  version: 298182f68c66c05229eb03ac171abe6e309ee79a
+- name: github.com/uber/jaeger-client-go
+  version: 1a782e2da844727691fef1757c72eb190c2909f0
+  subpackages:
+  - internal/baggage
+  - internal/spanlog
+  - internal/throttler
+  - log
+  - thrift
+  - thrift-gen/agent
+  - thrift-gen/jaeger
+  - thrift-gen/sampling
+  - thrift-gen/zipkincore
+  - utils
+- name: github.com/uber/jaeger-lib
+  version: ed3a127ec5fef7ae9ea95b01b542c47fbd999ce5
+  subpackages:
+  - metrics
+- name: github.com/weaveworks/common
+  version: 87611edc252e21e7de58c08270384450b126b48a
+  subpackages:
+  - errors
+  - httpgrpc
+  - httpgrpc/server
+  - instrument
+  - logging
+  - middleware
+  - server
+  - signals
+  - user
+- name: github.com/weaveworks/promrus
+  version: 5c7f70ad4f3233037d079b8b053fc6ceaa20697b
+- name: golang.org/x/crypto
+  version: de0752318171da717af4ce24d0a2e8626afaeb11
+  subpackages:
+  - ed25519
+  - ed25519/internal/edwards25519
+  - ssh/terminal
+- name: golang.org/x/net
+  version: 0ed95abb35c445290478a5348a7b38bb154135fd
+  subpackages:
+  - bpf
+  - context
+  - context/ctxhttp
+  - http2
+  - http2/hpack
+  - idna
+  - internal/iana
+  - internal/socket
+  - internal/timeseries
+  - ipv4
+  - ipv6
+  - lex/httplex
+  - trace
+- name: golang.org/x/sys
+  version: 95c6576299259db960f6c5b9b69ea52422860fce
+  subpackages:
+  - unix
+  - windows
+- name: golang.org/x/text
+  version: b19bf474d317b857955b12035d2c5acb57ce8b01
+  subpackages:
+  - secure/bidirule
+  - transform
+  - unicode/bidi
+  - unicode/norm
+- name: google.golang.org/genproto
+  version: 09f6ed296fc66555a25fe4ce95173148778dfa85
+  subpackages:
+  - googleapis/rpc/status
+- name: google.golang.org/grpc
+  version: 168a6198bcb0ef175f7dacec0b8691fc141dc9b8
+  subpackages:
+  - balancer
+  - balancer/base
+  - balancer/roundrobin
+  - codes
+  - connectivity
+  - credentials
+  - encoding
+  - encoding/proto
+  - grpclog
+  - internal
+  - internal/backoff
+  - internal/channelz
+  - internal/grpcrand
+  - keepalive
+  - metadata
+  - naming
+  - peer
+  - resolver
+  - resolver/dns
+  - resolver/passthrough
+  - stats
+  - status
+  - tap
+  - transport
+- name: gopkg.in/yaml.v2
+  version: 5420a8b6744d3b0345ab293f6fcba19c978f1183
+testImports: []
