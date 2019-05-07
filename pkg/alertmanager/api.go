@@ -3,12 +3,13 @@ package alertmanager
 import (
 	"encoding/json"
 	"fmt"
+	"html/template"
+	"net/http"
+
 	"github.com/go-kit/kit/log/level"
 	"github.com/gorilla/mux"
 	amconfig "github.com/prometheus/alertmanager/config"
 	logger2 "github.com/searchlight/alertmanager/pkg/logger"
-	"html/template"
-	"net/http"
 )
 
 // API implements the configs api.
@@ -61,7 +62,7 @@ func (a *API) getConfig(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(cfg); err != nil {
 		// XXX: Untested
-		level.Error(logger).Log( "msg", "error encoding config", "err", err)
+		level.Error(logger).Log("msg", "error encoding config", "err", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -97,7 +98,7 @@ func (a *API) setConfig(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := a.client.SetConfig(userID, cfg); err != nil {
 		// XXX: Untested
-		level.Error(logger).Log( "msg", "error storing config", "err", err)
+		level.Error(logger).Log("msg", "error storing config", "err", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -142,6 +143,7 @@ func (a *API) restoreConfig(w http.ResponseWriter, r *http.Request) {
 }
 
 func validateAlertmanagerConfig(cfg string) error {
+	// TODO: should check for templates files
 	_, err := amconfig.Load(cfg)
 	if err != nil {
 		return err

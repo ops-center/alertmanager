@@ -1,8 +1,10 @@
 package cmds
 
 import (
-	"github.com/searchlight/alertmanager/pkg/alertmanager"
 	"net/http"
+	"strings"
+
+	"github.com/searchlight/alertmanager/pkg/alertmanager"
 
 	"github.com/searchlight/alertmanager/pkg/logger"
 
@@ -19,7 +21,7 @@ func NewCmdRun() *cobra.Command {
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.InitLogger()
-			logger.Logger.Log("Starting alertmanager")
+			logger.Logger.Log("msg", "Starting alertmanager")
 
 			if err := multiAMCfg.Validate(); err != nil {
 				return err
@@ -34,13 +36,14 @@ func NewCmdRun() *cobra.Command {
 			go multiAM.Run()
 			defer multiAM.Stop()
 
-
 			amAPI := alertmanager.NewAPI(amClient)
 
 			r := mux.NewRouter()
 			amAPI.RegisterRoutes(r)
 
-			r.PathPrefix("/api/prom").HandlerFunc(multiAM.ServeHTTP)
+			path := "/" + strings.Trim(multiAMCfg.PathPrefix, "/")
+
+			r.PathPrefix(path).HandlerFunc(multiAM.ServeHTTP)
 			if err := http.ListenAndServe(multiAMCfg.ClusterBindAddr, r); err != nil {
 				return err
 			}

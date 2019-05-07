@@ -8,8 +8,8 @@ import (
 
 func NewRootCmd() *cobra.Command {
 	var rootCmd = &cobra.Command{
-		Use:               "ruler [command]",
-		Short:             `ruler for m3db`,
+		Use:               "alertmanager [command]",
+		Short:             `alertmanager for m3db`,
 		DisableAutoGenTag: true,
 	}
 
