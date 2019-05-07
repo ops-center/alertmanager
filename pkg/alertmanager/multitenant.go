@@ -296,7 +296,7 @@ func (am *MultitenantAlertmanager) ServeHTTP(w http.ResponseWriter, req *http.Re
 		http.Error(w, fmt.Sprintf("no Alertmanager for this user ID"), http.StatusNotFound)
 		return
 	}
-	userAM.router.ServeHTTP(w, req)
+	userAM.mux.ServeHTTP(w, req)
 }
 
 func getLatestUpdateTime(cfgs map[string]AlertmanagerConfig, cur int64) int64 {

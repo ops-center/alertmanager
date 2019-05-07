@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: alert-webhook
+  namespace: demo
+  labels:
+    name: alert-webhook
+spec:
+  serviceName: alert-webhook
+  selector:
+    matchLabels:
+      name: alert-webhook
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        name: alert-webhook
+    spec:
+      containers:
+        - name: alert-webhook
+          image: nightfury1204/alert-webhook:canary
+          ports:
+            - containerPort: 5001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alert-webhook
+  namespace: demo
+spec:
+  selector:
+    name: alert-webhook
+  ports:
+    - port: 5001
+      protocol: TCP
+      name: http
+  clusterIP: None

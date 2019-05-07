@@ -1,8 +1,10 @@
-hash: 124fa83e5d6f931aff3c80aad10e91fc947003c34c8894125dd7a8e628699b13
-updated: 2019-05-03T12:55:15.531992691+06:00
+hash: 2f751ccf42618da06890aecb36c238bed0dbee37813249ff7dfe3802739fb6ee
+updated: 2019-05-06T14:52:08.065215381+06:00
 imports:
 - name: github.com/armon/go-metrics
   version: ec5e00d3c878b2a97bbe0884ef45ffd1b4f669f5
+- name: github.com/asaskevich/govalidator
+  version: f61b66f89f4a311bef65f13e575bcf1a2ffadda6
 - name: github.com/beorn7/perks
   version: 3ac7bf7a47d159a033b107610db8a1b6575507a4
   subpackages:
@@ -10,16 +12,18 @@ imports:
 - name: github.com/blang/semver
   version: 1a9109f8c4a1d669a78442f567dfe8eedf982793
 - name: github.com/cenkalti/backoff
-  version: 1e4cf3da559842a91afcb6ea6141451e6c30c618
+  version: 2146c93394225c3732078705043ce9f26584d334
 - name: github.com/cespare/xxhash
   version: 48099fad606eafc26e3a569fad19ff510fff4df6
 - name: github.com/codahale/hdrhistogram
   version: 3a0bb77429bd3a61596f5e8a3172445844342120
 - name: github.com/cortexproject/cortex
-  version: 2c5518f086f88915e7269a212188b235984b0207
+  version: c4180aa7af07c562f2c00f723ea167bd2d4a27f0
   subpackages:
   - pkg/prom1/storage/metric
   - pkg/util
+- name: github.com/docker/go-units
+  version: 9e638d38cf6977a37a8ea0078f3ee75a7cdb2dd1
 - name: github.com/go-kit/kit
   version: a9ca6725cbbea455e61c6bc8a1ed28e81eb3493b
   subpackages:
@@ -27,6 +31,34 @@ imports:
   - log/level
 - name: github.com/go-logfmt/logfmt
   version: 432dd90af23366a89a611c020003fc8ba281ae5d
+- name: github.com/go-openapi/analysis
+  version: 3c8fe72ed5d307113ef76c7c3035964d7e4d4b73
+- name: github.com/go-openapi/errors
+  version: b2b2befaf267d082d779bcef52d682a47c779517
+- name: github.com/go-openapi/jsonpointer
+  version: 46af16f9f7b149af66e5d1bd010e3574dc06de98
+- name: github.com/go-openapi/jsonreference
+  version: 3fb327e6747da3043567ee86abd02bb6376b6be2
+- name: github.com/go-openapi/loads
+  version: 2a2b323bab96e6b1fdee110e57d959322446e9c9
+- name: github.com/go-openapi/runtime
+  version: 9a3091f566c0811ef4d54b535179bc0fc484a11f
+  subpackages:
+  - flagext
+  - logger
+  - middleware
+  - middleware/denco
+  - middleware/header
+  - middleware/untyped
+  - security
+- name: github.com/go-openapi/spec
+  version: bce47c9386f9ecd6b86f450478a80103c3fe1402
+- name: github.com/go-openapi/strfmt
+  version: 913ee058e387ac83a67e2d9f13acecdcd5769fc6
+- name: github.com/go-openapi/swag
+  version: 2b0bd4f193d011c203529df626a65d63cb8a79e8
+- name: github.com/go-openapi/validate
+  version: 9a6e517cddf1ddd47449be5d06a6a786e51d9986
 - name: github.com/go-stack/stack
   version: 54be5f394ed2c3e19dac9134a40a95ba5a017f7b
 - name: github.com/gogo/googleapis
@@ -84,16 +116,26 @@ imports:
   version: a9da52f0668fc4321ec18e9e28dd8141621a808f
 - name: github.com/inconshreveable/mousetrap
   version: 76626ae9c91c4f2a10f34cad8ce83ea42c93bb75
+- name: github.com/jessevdk/go-flags
+  version: c0795c8afcf41dd1d786bebce68636c199b3bb45
 - name: github.com/julienschmidt/httprouter
   version: 26a05976f9bf5c3aa992cc20e8588c359418ee58
 - name: github.com/kr/logfmt
   version: b84e30acd515aadc4b783ad4ff83aff3299bdfe0
+- name: github.com/mailru/easyjson
+  version: 2f5df55504ebc322e4d52d34df6a1f5b503bf26d
+  subpackages:
+  - buffer
+  - jlexer
+  - jwriter
 - name: github.com/matttproud/golang_protobuf_extensions
   version: c12348ce28de40eed0136aa2b644d0ee0650e56c
   subpackages:
   - pbutil
 - name: github.com/miekg/dns
   version: 8fc2e5773bbd308ca2fcc962fd8d25c1bd0f6743
+- name: github.com/mitchellh/mapstructure
+  version: 3536a929edddb9a5b34bd6861dc4a9647cb459fe
 - name: github.com/mwitkow/go-conntrack
   version: cc309e4a22231782e8893f3c35ced0967807a33e
 - name: github.com/oklog/oklog
@@ -121,6 +163,14 @@ imports:
   version: 308b7620642dc147794e6686a3f94d1b6fc8ef4d
   subpackages:
   - api/v1
+  - api/v2
+  - api/v2/models
+  - api/v2/restapi
+  - api/v2/restapi/operations
+  - api/v2/restapi/operations/alert
+  - api/v2/restapi/operations/general
+  - api/v2/restapi/operations/receiver
+  - api/v2/restapi/operations/silence
   - asset
   - cluster
   - cluster/clusterpb
@@ -177,6 +227,12 @@ imports:
   - rules
   - storage
   - util/strutil
+- name: github.com/PuerkitoBio/purell
+  version: 8a290539e2e8629dbc4e6bad948158f790ec31f4
+- name: github.com/PuerkitoBio/urlesc
+  version: 5bd2802263f21d8788851d5305584c82a5c75d7e
+- name: github.com/rs/cors
+  version: 76f58f330d76a55c5badc74f6212e8a15e742c77
 - name: github.com/satori/go.uuid
   version: f58768cc1a7a7e77a3bd49e98cdd21419399b6a3
 - name: github.com/sean-/seed
@@ -249,6 +305,7 @@ imports:
   - ipv4
   - ipv6
   - lex/httplex
+  - netutil
   - trace
 - name: golang.org/x/sys
   version: 95c6576299259db960f6c5b9b69ea52422860fce
@@ -258,10 +315,17 @@ imports:
 - name: golang.org/x/text
   version: b19bf474d317b857955b12035d2c5acb57ce8b01
   subpackages:
+  - cases
+  - internal
+  - internal/tag
+  - language
+  - runes
   - secure/bidirule
+  - secure/precis
   - transform
   - unicode/bidi
   - unicode/norm
+  - width
 - name: google.golang.org/genproto
   version: 09f6ed296fc66555a25fe4ce95173148778dfa85
   subpackages:
@@ -293,6 +357,11 @@ imports:
   - status
   - tap
   - transport
+- name: gopkg.in/mgo.v2
+  version: 9856a29383ce1c59f308dd1cf0363a79b5bef6b5
+  subpackages:
+  - bson
+  - internal/json
 - name: gopkg.in/yaml.v2
   version: 5420a8b6744d3b0345ab293f6fcba19c978f1183
 testImports: []

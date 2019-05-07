@@ -7,13 +7,15 @@ import (
 	"net/url"
 	"path"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/prometheus/alertmanager/cluster"
 
 	"github.com/go-kit/kit/log"
-	api "github.com/prometheus/alertmanager/api/v1"
+	apiv1 "github.com/prometheus/alertmanager/api/v1"
+	apiv2 "github.com/prometheus/alertmanager/api/v2"
 	"github.com/prometheus/alertmanager/config"
 	"github.com/prometheus/alertmanager/dispatch"
 	"github.com/prometheus/alertmanager/inhibit"
@@ -44,7 +46,8 @@ type Config struct {
 // An Alertmanager manages the alerts for one user.
 type Alertmanager struct {
 	cfg        *Config
-	api        *api.API
+	apiV1      *apiv1.API
+	apiV2      *apiv2.API
 	logger     log.Logger
 	nflog      *nflog.Log
 	silences   *silence.Silences
@@ -54,7 +57,7 @@ type Alertmanager struct {
 	inhibitor  *inhibit.Inhibitor
 	stop       chan struct{}
 	wg         sync.WaitGroup
-	router     *route.Router
+	mux        *http.ServeMux
 }
 
 // New creates a new Alertmanager.
@@ -121,20 +124,40 @@ func NewAlertmanager(cfg *Config) (*Alertmanager, error) {
 		return nil, fmt.Errorf("failed to create alerts: %v", err)
 	}
 
-	am.api = api.New(
+	am.apiV1 = apiv1.New(
 		am.alerts,
 		am.silences,
 		marker.Status,
 		// TODO: look at this
 		nil, // Passing a nil mesh router since we don't show mesh router information in Cortex anyway.
-		log.With(am.logger, "component", "api"),
+		log.With(am.logger, "component", "api/v1"),
 	)
 
-	am.router = route.New()
+	am.apiV2, err = apiv2.NewAPI(
+		am.alerts,
+		marker.Status,
+		am.silences,
+		// TODO: look at this
+		nil, // Passing a nil mesh router since we don't show mesh router information in Cortex anyway.
+		log.With(am.logger, "component", "api/v2"),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create API v2: %v", err)
+	}
+
+	pathPrefix := "/" + strings.Trim(am.cfg.ExternalURL.Path, "/")
+	r := route.New()
 
 	webReload := make(chan chan error)
-	ui.Register(am.router.WithPrefix(am.cfg.ExternalURL.Path), webReload, log.With(am.logger, "component", "ui"))
-	am.api.Register(am.router.WithPrefix(path.Join(am.cfg.ExternalURL.Path, "/api/v1")))
+	ui.Register(r.WithPrefix(am.cfg.ExternalURL.Path), webReload, log.With(am.logger, "component", "ui"))
+	am.apiV1.Register(r.WithPrefix(path.Join(pathPrefix, "/api/v1")))
+
+	am.mux = http.NewServeMux()
+
+	am.mux.Handle(pathPrefix+"/", r)
+
+	// https://github.com/prometheus/alertmanager/blob/308b7620642dc147794e6686a3f94d1b6fc8ef4d/cmd/alertmanager/main.go#L422
+	am.mux.Handle(pathPrefix+"/api/v2/", http.StripPrefix(pathPrefix+"/api/v2", am.apiV2.Handler))
 
 	go func() {
 		for {
@@ -172,7 +195,12 @@ func (am *Alertmanager) ApplyConfig(userID string, conf *config.Config) error {
 	}
 	tmpl.ExternalURL = am.cfg.ExternalURL
 
-	err = am.api.Update(conf, time.Duration(conf.Global.ResolveTimeout))
+	// Update configuration
+	err = am.apiV1.Update(conf, time.Duration(conf.Global.ResolveTimeout))
+	if err != nil {
+		return err
+	}
+	err = am.apiV2.Update(conf, time.Duration(conf.Global.ResolveTimeout))
 	if err != nil {
 		return err
 	}
@@ -229,8 +257,8 @@ func (am *Alertmanager) Stop() {
 }
 
 // ServeHTTP serves the Alertmanager's web UI and API.
-func (am *Alertmanager) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	am.router.ServeHTTP(w, req)
+func (am *Alertmanager) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	am.mux.ServeHTTP(w, r)
 }
 
 // https://github.com/prometheus/alertmanager/blob/e6d0803746482f58b44fa55d17908e6d43bee7ee/cmd/alertmanager/main.go#L477

@@ -1,0 +1,3 @@
+{
+  "config": "{\n  \"global\": {\n    \"resolve_timeout\": \"5m\"\n  },\n  \"route\": {\n    \"group_by\": [\n      \"alertname\"\n    ],\n    \"group_wait\": \"10s\",\n    \"group_interval\": \"10s\",\n    \"repeat_interval\": \"5m\",\n    \"receiver\": \"web.hook\"\n  },\n  \"receivers\": [\n    {\n      \"name\": \"web.hook\",\n      \"webhook_configs\": [\n        {\n          \"url\": \"http://127.0.0.1:5002/\"\n        }\n      ]\n    }\n  ]\n}"
+}

@@ -43,3 +43,21 @@ import:
   version: v0.1.3
 - package: github.com/google/btree
   version: v1.0.0
+- package: github.com/go-openapi/spec
+  version: 0.15.0
+- package: github.com/go-openapi/analysis
+  version: 0.15.0
+- package: github.com/go-openapi/errors
+  version: 0.15.0
+- package: github.com/go-openapi/jsonreference
+  version: 0.15.0
+- package: github.com/go-openapi/loads
+  version: 0.15.0
+- package: github.com/go-openapi/runtime
+  version: 0.15.0
+- package: github.com/go-openapi/strfmt
+  version: 0.15.0
+- package: github.com/go-openapi/swag
+  version: 0.15.0
+- package: github.com/go-openapi/validate
+  version: 0.15.0
