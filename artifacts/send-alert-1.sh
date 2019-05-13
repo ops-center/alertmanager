@@ -30,3 +30,8 @@ curl -X POST \
     -H "X-AppsCode-UserID: 1" \
     -d "$alerts1" \
     http://localhost:9094/api/prom/alertmanager/api/v1/alerts
+
+curl -X POST \
+    -H "X-AppsCode-UserID: 1" \
+    -d "$alerts1" \
+    http://localhost:9096/api/prom/alertmanager/api/v1/alerts

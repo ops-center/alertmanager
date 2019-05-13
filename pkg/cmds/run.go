@@ -44,7 +44,9 @@ func NewCmdRun() *cobra.Command {
 			path := "/" + strings.Trim(multiAMCfg.PathPrefix, "/")
 
 			r.PathPrefix(path).HandlerFunc(multiAM.ServeHTTP)
-			if err := http.ListenAndServe(multiAMCfg.ClusterBindAddr, r); err != nil {
+
+			// TODO: change the server listen address
+			if err := http.ListenAndServe("0.0.0.0:"+multiAMCfg.APIPort, r); err != nil {
 				return err
 			}
 			return nil

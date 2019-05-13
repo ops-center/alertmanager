@@ -11,6 +11,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-kit/kit/log"
+	"github.com/prometheus/alertmanager/cluster"
+
 	"github.com/searchlight/alertmanager/pkg/logger"
 
 	"github.com/go-kit/kit/log/level"
@@ -57,6 +60,8 @@ func init() {
 type MultitenantAlertmanager struct {
 	cfg *MultitenantAlertmanagerConfig
 
+	peer *cluster.Peer
+
 	configsClient AlertmanagerClient
 
 	// All the organization configurations that we have. Only used for instrumentation.
@@ -67,8 +72,9 @@ type MultitenantAlertmanager struct {
 	alertmanagersMtx sync.Mutex
 	alertmanagers    map[string]*Alertmanager
 
-	stop chan struct{}
-	done chan struct{}
+	settleCtxCancel context.CancelFunc
+	stop            chan struct{}
+	done            chan struct{}
 }
 
 // NewMultitenantAlertmanager creates a new MultitenantAlertmanager.
@@ -85,6 +91,42 @@ func NewMultitenantAlertmanager(cfg *MultitenantAlertmanagerConfig, configClient
 		alertmanagers: map[string]*Alertmanager{},
 		stop:          make(chan struct{}),
 		done:          make(chan struct{}),
+		peer:          nil,
+	}
+
+	if cfg.ClusterAdvertiseAddr != "" {
+		fmt.Println("peers: ", cfg.Peers)
+
+		am.peer, err = cluster.Create(
+			log.With(logger.Logger, "component", "cluster"),
+			// TODO: promethues registry
+			prometheus.DefaultRegisterer,
+			cfg.ClusterBindAddr,
+			cfg.ClusterAdvertiseAddr,
+			cfg.Peers,
+			true,
+			cfg.PushPullInterval,
+			cfg.GossipInterval,
+			cfg.TcpTimeout,
+			cfg.ProbeTimeout,
+			cfg.ProbeInterval,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create gossipe cluster: %v", err)
+		}
+
+		// TODO: Add retry?
+		err = am.peer.Join(
+			am.cfg.ReconnectInterval,
+			am.cfg.PeerReconnectTimeout,
+		)
+		if err != nil {
+			level.Warn(logger.Logger).Log("msg", "unable to join gossip mesh", "err", err)
+		}
+
+		ctx, cancle := context.WithTimeout(context.Background(), am.cfg.SettleTimeout)
+		am.settleCtxCancel = cancle
+		go am.peer.Settle(ctx, am.cfg.GossipInterval*10)
 	}
 	return am, nil
 }
@@ -116,6 +158,15 @@ func (am *MultitenantAlertmanager) Stop() {
 	<-am.done
 	for _, am := range am.alertmanagers {
 		am.Stop()
+	}
+
+	if am.settleCtxCancel != nil {
+		am.settleCtxCancel()
+	}
+	if am.peer != nil {
+		if err := am.peer.Leave(10 * time.Second); err != nil {
+			level.Warn(logger.Logger).Log("msg", "unable to leave gossip mesh", "err", err)
+		}
 	}
 	level.Debug(logger.Logger).Log("msg", "MultitenantAlertmanager stopped")
 }
@@ -270,7 +321,8 @@ func (am *MultitenantAlertmanager) newAlertmanager(userID string, amConfig *amco
 		Logger:      logger.Logger,
 		Retention:   am.cfg.Retention,
 		ExternalURL: u,
-		Peer:        nil,
+		Peer:        am.peer,
+		PeerTimeout: am.cfg.PeerTimeout,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("unable to start Alertmanager for user %v: %v", userID, err)
