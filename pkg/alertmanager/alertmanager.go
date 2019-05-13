@@ -41,6 +41,7 @@ type Config struct {
 	Retention   time.Duration
 	ExternalURL *url.URL
 	Peer        *cluster.Peer
+	PeerTimeout time.Duration
 }
 
 // An Alertmanager manages the alerts for one user.
@@ -108,7 +109,7 @@ func NewAlertmanager(cfg *Config) (*Alertmanager, error) {
 		return nil, fmt.Errorf("failed to create silences: %v", err)
 	}
 	if am.cfg.Peer != nil {
-		c := am.cfg.Peer.AddState(fmt.Sprintf("sil_%s", am.cfg.UserID), am.nflog, prometheus.DefaultRegisterer)
+		c := am.cfg.Peer.AddState(fmt.Sprintf("sil_%s", am.cfg.UserID), am.silences, prometheus.DefaultRegisterer)
 		am.silences.SetBroadcast(c.Broadcast)
 	}
 
@@ -129,7 +130,7 @@ func NewAlertmanager(cfg *Config) (*Alertmanager, error) {
 		am.silences,
 		marker.Status,
 		// TODO: look at this
-		nil, // Passing a nil mesh router since we don't show mesh router information in Cortex anyway.
+		am.cfg.Peer, // Passing a nil mesh router since we don't show mesh router information in Cortex anyway.
 		log.With(am.logger, "component", "api/v1"),
 	)
 
@@ -138,7 +139,7 @@ func NewAlertmanager(cfg *Config) (*Alertmanager, error) {
 		marker.Status,
 		am.silences,
 		// TODO: look at this
-		nil, // Passing a nil mesh router since we don't show mesh router information in Cortex anyway.
+		am.cfg.Peer, // Passing a nil mesh router since we don't show mesh router information in Cortex anyway.
 		log.With(am.logger, "component", "api/v2"),
 	)
 	if err != nil {
@@ -212,8 +213,7 @@ func (am *Alertmanager) ApplyConfig(userID string, conf *config.Config) error {
 
 	waitFunc := func() time.Duration { return 0 }
 	if am.cfg.Peer != nil {
-		// TODO: use flag peerTimeout
-		waitFunc = clusterWait(am.cfg.Peer, 15*time.Second)
+		waitFunc = clusterWait(am.cfg.Peer, am.cfg.PeerTimeout)
 	}
 	timeoutFunc := func(d time.Duration) time.Duration {
 		if d < notify.MinTimeout {
