@@ -40,6 +40,7 @@ func NewCmdRun() *cobra.Command {
 
 			r := mux.NewRouter()
 			amAPI.RegisterRoutes(r)
+			r.HandleFunc("/api/v1/cluster/status", multiAM.ClusterStatus)
 
 			path := "/" + strings.Trim(multiAMCfg.PathPrefix, "/")
 
