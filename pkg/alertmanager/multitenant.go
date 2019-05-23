@@ -2,6 +2,7 @@ package alertmanager
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -10,6 +11,8 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/go-kit/kit/log"
 	"github.com/prometheus/alertmanager/cluster"
@@ -81,7 +84,7 @@ type MultitenantAlertmanager struct {
 func NewMultitenantAlertmanager(cfg *MultitenantAlertmanagerConfig, configClient AlertmanagerClient) (*MultitenantAlertmanager, error) {
 	err := os.MkdirAll(cfg.DataDir, 0777)
 	if err != nil {
-		return nil, fmt.Errorf("unable to create Alertmanager data directory %q: %s", cfg.DataDir, err)
+		return nil, errors.Errorf("unable to create Alertmanager data directory %q: %s", cfg.DataDir, err)
 	}
 
 	am := &MultitenantAlertmanager{
@@ -94,15 +97,18 @@ func NewMultitenantAlertmanager(cfg *MultitenantAlertmanagerConfig, configClient
 		peer:          nil,
 	}
 
-	if cfg.ClusterAdvertiseAddr != "" {
-		fmt.Println("peers: ", cfg.Peers)
+	if cfg.ClusterBindAddr != "" {
 
+		advertiseAddr, err := getAdvertiseAddr(cfg)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get advertise address")
+		}
 		am.peer, err = cluster.Create(
 			log.With(logger.Logger, "component", "cluster"),
 			// TODO: promethues registry
 			prometheus.DefaultRegisterer,
 			cfg.ClusterBindAddr,
-			cfg.ClusterAdvertiseAddr,
+			advertiseAddr,
 			cfg.Peers,
 			true,
 			cfg.PushPullInterval,
@@ -112,7 +118,7 @@ func NewMultitenantAlertmanager(cfg *MultitenantAlertmanagerConfig, configClient
 			cfg.ProbeInterval,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create gossipe cluster: %v", err)
+			return nil, errors.Errorf("failed to create gossipe cluster: %v", err)
 		}
 
 		// TODO: Add retry?
@@ -232,7 +238,7 @@ func (am *MultitenantAlertmanager) createTemplatesFile(userID, fn, content strin
 	dir := filepath.Join(am.cfg.DataDir, "templates", userID, filepath.Dir(fn))
 	err := os.MkdirAll(dir, 0755)
 	if err != nil {
-		return false, fmt.Errorf("unable to create Alertmanager templates directory %q: %s", dir, err)
+		return false, errors.Errorf("unable to create Alertmanager templates directory %q: %s", dir, err)
 	}
 
 	file := filepath.Join(dir, fn)
@@ -242,7 +248,7 @@ func (am *MultitenantAlertmanager) createTemplatesFile(userID, fn, content strin
 	}
 
 	if err := ioutil.WriteFile(file, []byte(content), 0644); err != nil {
-		return false, fmt.Errorf("unable to create Alertmanager template file %q: %s", file, err)
+		return false, errors.Errorf("unable to create Alertmanager template file %q: %s", file, err)
 	}
 
 	return true, nil
@@ -252,7 +258,7 @@ func (am *MultitenantAlertmanager) createTemplatesFile(userID, fn, content strin
 // creating an alertmanager if it doesn't already exist.
 func (am *MultitenantAlertmanager) setConfig(userID string, config *AlertmanagerConfig) error {
 	if config == nil {
-		return fmt.Errorf("alertmanager config is nil for user %v", userID)
+		return errors.Errorf("alertmanager config is nil for user %v", userID)
 	}
 
 	// if deleted, then stop the alertmanager and delete config
@@ -288,7 +294,7 @@ func (am *MultitenantAlertmanager) setConfig(userID string, config *Alertmanager
 
 	amConfig, err = amconfig.Load(config.Config)
 	if err != nil {
-		return fmt.Errorf("failed load alertmanager config for user %v: %v", userID, err)
+		return errors.Errorf("failed load alertmanager config for user %v: %v", userID, err)
 	}
 
 	// If no Alertmanager instance exists for this user yet, start one.
@@ -304,7 +310,7 @@ func (am *MultitenantAlertmanager) setConfig(userID string, config *Alertmanager
 		// If the config changed, apply the new one.
 		err := am.alertmanagers[userID].ApplyConfig(userID, amConfig)
 		if err != nil {
-			return fmt.Errorf("unable to apply Alertmanager config for user %v: %v", userID, err)
+			return errors.Errorf("unable to apply Alertmanager config for user %v: %v", userID, err)
 		}
 	}
 	return nil
@@ -313,7 +319,7 @@ func (am *MultitenantAlertmanager) setConfig(userID string, config *Alertmanager
 func (am *MultitenantAlertmanager) newAlertmanager(userID string, amConfig *amconfig.Config) (*Alertmanager, error) {
 	u, err := url.Parse(am.cfg.PathPrefix)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse external url: %v", err)
+		return nil, errors.Errorf("failed to parse external url: %v", err)
 	}
 	newAM, err := NewAlertmanager(&Config{
 		UserID:      userID,
@@ -325,11 +331,11 @@ func (am *MultitenantAlertmanager) newAlertmanager(userID string, amConfig *amco
 		PeerTimeout: am.cfg.PeerTimeout,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("unable to start Alertmanager for user %v: %v", userID, err)
+		return nil, errors.Errorf("unable to start Alertmanager for user %v: %v", userID, err)
 	}
 
 	if err := newAM.ApplyConfig(userID, amConfig); err != nil {
-		return nil, fmt.Errorf("unable to apply initial config for user %v: %v", userID, err)
+		return nil, errors.Errorf("unable to apply initial config for user %v: %v", userID, err)
 	}
 	return newAM, nil
 }
@@ -358,4 +364,43 @@ func getLatestUpdateTime(cfgs map[string]AlertmanagerConfig, cur int64) int64 {
 		}
 	}
 	return cur
+}
+
+func (am *MultitenantAlertmanager) ClusterStatus(w http.ResponseWriter, req *http.Request) {
+	status := struct {
+		Status string                 `json:"status"`
+		Peers  map[string]interface{} `json:"peers,omitempty"`
+	}{}
+	if am.peer == nil {
+		status.Status = "disabled"
+	} else {
+		status.Status = am.peer.Status()
+
+		info := map[string]interface{}{}
+		type nodeInfo struct {
+			Name string `json:"name"`
+			Addr string `json:"address"`
+		}
+		self := am.peer.Self()
+		info["self"] = nodeInfo{
+			Name: self.Name,
+			Addr: fmt.Sprintf("%s:%d", self.Addr.String(), self.Port),
+		}
+		mList := []nodeInfo{}
+		for _, nd := range am.peer.Peers() {
+			mList = append(mList, nodeInfo{
+				Name: nd.Name,
+				Addr: fmt.Sprintf("%s:%d", nd.Addr.String(), nd.Port),
+			})
+		}
+		info["peers"] = mList
+
+		status.Peers = info
+	}
+	if err := json.NewEncoder(w).Encode(status); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	return
 }

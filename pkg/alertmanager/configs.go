@@ -1,7 +1,6 @@
 package alertmanager
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/prometheus/alertmanager/cluster"
@@ -36,7 +35,7 @@ type MultitenantAlertmanagerConfig struct {
 
 // AddFlags adds the flags required to config this to the given FlagSet.
 func (cfg *MultitenantAlertmanagerConfig) AddFlags(f *pflag.FlagSet) {
-	f.StringVar(&cfg.APIPort, "alertmanager.api-port", "9094", "API port for alertmanager.")
+	f.StringVar(&cfg.APIPort, "alertmanager.api-port", "8443", "API port for alertmanager.")
 	f.StringVar(&cfg.DataDir, "alertmanager.storage.path", "data/", "Base path for data storage.")
 	f.DurationVar(&cfg.Retention, "alertmanager.storage.retention", 5*24*time.Hour, "How long to keep data for.")
 
@@ -61,10 +60,5 @@ func (cfg *MultitenantAlertmanagerConfig) AddFlags(f *pflag.FlagSet) {
 }
 
 func (c *MultitenantAlertmanagerConfig) Validate() error {
-	if len(c.Peers) > 0 {
-		if c.ClusterAdvertiseAddr == "" {
-			return fmt.Errorf("in cluster setup, cluster.advertise-address must be provided")
-		}
-	}
 	return nil
 }

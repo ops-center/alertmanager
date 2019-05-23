@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager
+  namespace: demo
+spec:
+  ports:
+    - port: 9094
+      name: cluster
+    - port: 8443
+      name: api
+  clusterIP: None
+  selector:
+    app: multi-tenant-alertmanager
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: multi-tenant-alertmanager
+  namespace: demo
+spec:
+  selector:
+    matchLabels:
+      app: multi-tenant-alertmanager
+  serviceName: alertmanager
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: multi-tenant-alertmanager
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: alertmanager
+          image: nightfury1204/alertmanager:canary
+          imagePullPolicy: Always
+          args:
+            - run
+            - --cluster.listen-address=0.0.0.0:9094
+            - --cluster.peer=multi-tenant-alertmanager-0.alertmanager.demo.svc:9094
+            - --cluster.peer=multi-tenant-alertmanager-1.alertmanager.demo.svc:9094
+            - --cluster.peer=multi-tenant-alertmanager-2.alertmanager.demo.svc:9094
+          ports:
+            - containerPort: 8443
+              name: api
+            - containerPort: 9094
+              name: cluster
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
