@@ -3,6 +3,7 @@ module github.com/searchlight/alertmanager
 go 1.12
 
 require (
+	github.com/appscode/go v0.0.0-20190523031839-1468ee3a76e8
 	github.com/cortexproject/cortex v0.0.0-20190525232146-bec610fe59c0
 	github.com/go-kit/kit v0.8.0
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
