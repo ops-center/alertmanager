@@ -4,11 +4,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/searchlight/alertmanager/pkg/alertmanager"
-
-	"github.com/searchlight/alertmanager/pkg/logger"
-
 	"github.com/gorilla/mux"
+	"github.com/searchlight/alertmanager/pkg/alertmanager"
+	"github.com/searchlight/alertmanager/pkg/logger"
 	"github.com/spf13/cobra"
 )
 

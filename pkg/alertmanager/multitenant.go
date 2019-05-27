@@ -12,18 +12,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
-
+	"github.com/cortexproject/cortex/pkg/util"
 	"github.com/go-kit/kit/log"
-	"github.com/prometheus/alertmanager/cluster"
-
-	"github.com/searchlight/alertmanager/pkg/logger"
-
 	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
+	"github.com/prometheus/alertmanager/cluster"
 	amconfig "github.com/prometheus/alertmanager/config"
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/cortexproject/cortex/pkg/util"
+	"github.com/searchlight/alertmanager/pkg/logger"
 	"github.com/weaveworks/common/instrument"
 )
 

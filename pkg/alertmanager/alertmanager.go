@@ -11,11 +11,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/prometheus/alertmanager/cluster"
-
 	"github.com/go-kit/kit/log"
 	apiv1 "github.com/prometheus/alertmanager/api/v1"
 	apiv2 "github.com/prometheus/alertmanager/api/v2"
+	"github.com/prometheus/alertmanager/cluster"
 	"github.com/prometheus/alertmanager/config"
 	"github.com/prometheus/alertmanager/dispatch"
 	"github.com/prometheus/alertmanager/inhibit"
