@@ -250,6 +250,7 @@ func (am *Alertmanager) ApplyConfig(userID string, conf *config.Config) error {
 // Stop stops the Alertmanager.
 func (am *Alertmanager) Stop() {
 	am.dispatcher.Stop()
+	am.inhibitor.Stop()
 	am.alerts.Close()
 	close(am.stop)
 	am.wg.Wait()
