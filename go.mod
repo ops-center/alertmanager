@@ -13,7 +13,7 @@ require (
 	github.com/gorilla/websocket v1.4.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
 	github.com/pkg/errors v0.8.1
-	github.com/prometheus/alertmanager v0.16.2
+	github.com/prometheus/alertmanager v0.17.0
 	github.com/prometheus/client_golang v0.9.3-0.20190127221311-3c4408c8b829
 	github.com/prometheus/common v0.3.0
 	github.com/spf13/cobra v0.0.4
