@@ -37,7 +37,7 @@ func (a *API) RegisterRoutes(r *mux.Router) {
 		{"get_config", "GET", "/api/v1/config", a.getConfig},
 		{"set_config", "POST", "/api/v1/config", a.setConfig},
 		{"deactivate_config", "DELETE", "/api/v1/config/deactivate", a.deactivateConfig},
-		{"restore_config", "POST", "/api/v1/prom/restore", a.restoreConfig},
+		{"restore_config", "POST", "/api/v1/config/restore", a.restoreConfig},
 	} {
 		r.Handle(route.path, route.handler).Methods(route.method).Name(route.name)
 	}
