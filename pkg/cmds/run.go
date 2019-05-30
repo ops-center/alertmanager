@@ -4,14 +4,18 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/go-kit/kit/log"
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 	"github.com/searchlight/alertmanager/pkg/alertmanager"
 	"github.com/searchlight/alertmanager/pkg/logger"
+	"github.com/searchlight/alertmanager/pkg/storage/etcd"
 	"github.com/spf13/cobra"
 )
 
 func NewCmdRun() *cobra.Command {
 	multiAMCfg := &alertmanager.MultitenantAlertmanagerConfig{}
+	etcdCfg := etcd.NewConfig()
 
 	cmd := &cobra.Command{
 		Use:               "run",
@@ -24,17 +28,28 @@ func NewCmdRun() *cobra.Command {
 			if err := multiAMCfg.Validate(); err != nil {
 				return err
 			}
+			if err := etcdCfg.Validate(); err != nil {
+				return err
+			}
 
-			amClient := alertmanager.NewInmemAlertmanagerConfigStore()
+			etcdClient, err := etcd.NewClient(etcdCfg, log.With(logger.Logger, "domain", "etcd"))
+			if err != nil {
+				return err
+			}
 
-			multiAM, err := alertmanager.NewMultitenantAlertmanager(multiAMCfg, amClient)
+			amGetter, err := alertmanager.NewAlertmanagerGetterWrapper(etcdClient, etcdClient)
+			if err != nil {
+				return errors.Wrap(err, "failed to create alertmanager getter")
+			}
+
+			multiAM, err := alertmanager.NewMultitenantAlertmanager(multiAMCfg, amGetter)
 			if err != nil {
 				return err
 			}
 			go multiAM.Run()
 			defer multiAM.Stop()
 
-			amAPI := alertmanager.NewAPI(amClient)
+			amAPI := alertmanager.NewAPI(etcdClient)
 
 			r := mux.NewRouter()
 			amAPI.RegisterRoutes(r)
@@ -53,5 +68,6 @@ func NewCmdRun() *cobra.Command {
 	}
 
 	multiAMCfg.AddFlags(cmd.Flags())
+	etcdCfg.AddFlags(cmd.Flags())
 	return cmd
 }

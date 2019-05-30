@@ -40,6 +40,9 @@ spec:
             - --cluster.peer=multi-tenant-alertmanager-0.alertmanager.demo.svc:9094
             - --cluster.peer=multi-tenant-alertmanager-1.alertmanager.demo.svc:9094
             - --cluster.peer=multi-tenant-alertmanager-2.alertmanager.demo.svc:9094
+            - --etcd.endpoints=etcd-0.etcd.demo.svc:2379
+            - --etcd.endpoints=etcd-1.etcd.demo.svc:2379
+            - --etcd.endpoints=etcd-2.etcd.demo.svc:2379
           ports:
             - containerPort: 8443
               name: api

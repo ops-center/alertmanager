@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"time"
 
 	"github.com/go-kit/kit/log/level"
 	"github.com/gorilla/mux"
@@ -36,7 +37,7 @@ func (a *API) RegisterRoutes(r *mux.Router) {
 		{"get_config", "GET", "/api/v1/config", a.getConfig},
 		{"set_config", "POST", "/api/v1/config", a.setConfig},
 		{"deactivate_config", "DELETE", "/api/v1/config/deactivate", a.deactivateConfig},
-		{"restore_config", "POST", "/api/v1/prom/restore", a.restoreConfig},
+		{"restore_config", "POST", "/api/v1/config/restore", a.restoreConfig},
 	} {
 		r.Handle(route.path, route.handler).Methods(route.method).Name(route.name)
 	}
@@ -96,7 +97,10 @@ func (a *API) setConfig(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, fmt.Sprintf("Invalid templates: %v", err), http.StatusBadRequest)
 		return
 	}
-	if err := a.client.SetConfig(userID, cfg); err != nil {
+
+	cfg.UserID = userID
+	cfg.UpdatedAtInUnix = time.Now().Unix()
+	if err := a.client.SetConfig(&cfg); err != nil {
 		// XXX: Untested
 		level.Error(logger).Log("msg", "error storing config", "err", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -26,6 +26,7 @@ import (
 	"github.com/prometheus/alertmanager/types"
 	"github.com/prometheus/alertmanager/ui"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/common/route"
 )
 
@@ -51,6 +52,7 @@ type Alertmanager struct {
 	logger     log.Logger
 	nflog      *nflog.Log
 	silences   *silence.Silences
+	silencer   *silence.Silencer
 	marker     types.Marker
 	alerts     *mem.Alerts
 	dispatcher *dispatch.Dispatcher
@@ -90,7 +92,10 @@ func NewAlertmanager(cfg *Config) (*Alertmanager, error) {
 		am.nflog.SetBroadcast(c.Broadcast)
 	}
 
-	am.marker = types.NewMarker()
+	// TODO: Build a registry that can merge metrics from multiple users.
+	// For now, these metrics are ignored, as we can't register the same
+	// metric twice with a single registry.
+	am.marker = types.NewMarker(prometheus.NewRegistry())
 
 	silencesID := fmt.Sprintf("silences:%s", cfg.UserID)
 	silencesOpts := silence.Options{
@@ -118,8 +123,7 @@ func NewAlertmanager(cfg *Config) (*Alertmanager, error) {
 		am.wg.Done()
 	}()
 
-	marker := types.NewMarker()
-	am.alerts, err = mem.NewAlerts(context.Background(), marker, 30*time.Minute, am.logger)
+	am.alerts, err = mem.NewAlerts(context.Background(), am.marker, 30*time.Minute, am.logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create alerts: %v", err)
 	}
@@ -127,18 +131,27 @@ func NewAlertmanager(cfg *Config) (*Alertmanager, error) {
 	am.apiV1 = apiv1.New(
 		am.alerts,
 		am.silences,
-		marker.Status,
+		am.marker.Status,
 		// TODO: look at this
 		am.cfg.Peer, // Passing a nil mesh router since we don't show mesh router information in Cortex anyway.
 		log.With(am.logger, "component", "api/v1"),
+		// TODO: Build a registry that can merge metrics from multiple users.
+		// For now, these metrics are ignored, as we can't register the same
+		// metric twice with a single registry.
+		prometheus.NewRegistry(),
 	)
+
+	groupFn := func(routeFilter func(*dispatch.Route) bool, alertFilter func(*types.Alert, time.Time) bool) (dispatch.AlertGroups, map[model.Fingerprint][]string) {
+		return am.dispatcher.Groups(routeFilter, alertFilter)
+	}
 
 	am.apiV2, err = apiv2.NewAPI(
 		am.alerts,
-		marker.Status,
+		groupFn,
+		am.marker.Status,
 		am.silences,
 		// TODO: look at this
-		am.cfg.Peer, // Passing a nil mesh router since we don't show mesh router information in Cortex anyway.
+		am.cfg.Peer, // Passing a nil mesh router since we don't show mesh router information anyway.
 		log.With(am.logger, "component", "api/v2"),
 	)
 	if err != nil {
@@ -195,20 +208,11 @@ func (am *Alertmanager) ApplyConfig(userID string, conf *config.Config) error {
 	}
 	tmpl.ExternalURL = am.cfg.ExternalURL
 
-	// Update configuration
-	err = am.apiV1.Update(conf, time.Duration(conf.Global.ResolveTimeout))
-	if err != nil {
-		return err
-	}
-	err = am.apiV2.Update(conf, time.Duration(conf.Global.ResolveTimeout))
-	if err != nil {
-		return err
-	}
-
 	am.inhibitor.Stop()
 	am.dispatcher.Stop()
 
 	am.inhibitor = inhibit.NewInhibitor(am.alerts, conf.InhibitRules, am.marker, log.With(am.logger, "component", "inhibitor"))
+	am.silencer = silence.NewSilencer(am.silences, am.marker, log.With(am.logger, "component", "silencer"))
 
 	waitFunc := func() time.Duration { return 0 }
 	if am.cfg.Peer != nil {
@@ -226,12 +230,19 @@ func (am *Alertmanager) ApplyConfig(userID string, conf *config.Config) error {
 		tmpl,
 		waitFunc,
 		am.inhibitor,
-		am.silences,
+		am.silencer,
 		am.nflog,
-		am.marker,
 		am.cfg.Peer,
 		log.With(am.logger, "component", "pipeline"),
 	)
+
+	// Update configuration
+	am.apiV1.Update(conf)
+	am.apiV2.Update(conf, func(labels model.LabelSet) {
+		am.inhibitor.Mutes(labels)
+		am.silencer.Mutes(labels)
+	})
+
 	am.dispatcher = dispatch.NewDispatcher(
 		am.alerts,
 		dispatch.NewRoute(conf.Route, nil),
@@ -250,6 +261,7 @@ func (am *Alertmanager) ApplyConfig(userID string, conf *config.Config) error {
 // Stop stops the Alertmanager.
 func (am *Alertmanager) Stop() {
 	am.dispatcher.Stop()
+	am.inhibitor.Stop()
 	am.alerts.Close()
 	close(am.stop)
 	am.wg.Wait()

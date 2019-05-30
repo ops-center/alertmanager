@@ -61,7 +61,7 @@ type MultitenantAlertmanager struct {
 
 	peer *cluster.Peer
 
-	configsClient AlertmanagerClient
+	configsClient AlertmanagerGetter
 
 	// All the organization configurations that we have. Only used for instrumentation.
 	cfgs                 map[string]AlertmanagerConfig
@@ -77,7 +77,7 @@ type MultitenantAlertmanager struct {
 }
 
 // NewMultitenantAlertmanager creates a new MultitenantAlertmanager.
-func NewMultitenantAlertmanager(cfg *MultitenantAlertmanagerConfig, configClient AlertmanagerClient) (*MultitenantAlertmanager, error) {
+func NewMultitenantAlertmanager(cfg *MultitenantAlertmanagerConfig, configClient AlertmanagerGetter) (*MultitenantAlertmanager, error) {
 	err := os.MkdirAll(cfg.DataDir, 0777)
 	if err != nil {
 		return nil, errors.Errorf("unable to create Alertmanager data directory %q: %s", cfg.DataDir, err)
@@ -175,10 +175,10 @@ func (am *MultitenantAlertmanager) Stop() {
 
 // Load the full set of configurations from the server, retrying with backoff
 // until we can get them.
-func (am *MultitenantAlertmanager) loadAllConfigs() map[string]AlertmanagerConfig {
+func (am *MultitenantAlertmanager) loadAllConfigs() []AlertmanagerConfig {
 	backoff := util.NewBackoff(context.Background(), backoffConfig)
 	for {
-		cfgs, err := am.poll()
+		cfgs, err := am.poll(true)
 		if err == nil {
 			level.Debug(logger.Logger).Log("msg", "MultitenantAlertmanager: initial configuration load", "num_configs", len(cfgs))
 			return cfgs
@@ -189,7 +189,7 @@ func (am *MultitenantAlertmanager) loadAllConfigs() map[string]AlertmanagerConfi
 }
 
 func (am *MultitenantAlertmanager) updateConfigs() error {
-	cfgs, err := am.poll()
+	cfgs, err := am.poll(false)
 	if err != nil {
 		return err
 	}
@@ -198,34 +198,35 @@ func (am *MultitenantAlertmanager) updateConfigs() error {
 }
 
 // poll the configuration server. Not re-entrant.
-func (am *MultitenantAlertmanager) poll() (map[string]AlertmanagerConfig, error) {
-	var cfgs map[string]AlertmanagerConfig
+// if `all` is, then it will fetch all the configs. Otherwise only the updates
+func (am *MultitenantAlertmanager) poll(all bool) ([]AlertmanagerConfig, error) {
+	var cfgs []AlertmanagerConfig
 	err := instrument.CollectedRequest(context.Background(), "Configs.GetAlertmanagerConfigs", configsRequestDuration, instrument.ErrorCode, func(_ context.Context) error {
 		var err error
-		cfgs, err = am.configsClient.GetAllConfigsUpdatedOrDeletedAfter(am.configsUpdatedAtUnix)
+		if all {
+			cfgs, err = am.configsClient.GetAllConfigs()
+		} else {
+			cfgs, err = am.configsClient.GetAllUpdatedConfigs()
+		}
 		return err
 	})
 	if err != nil {
 		level.Warn(logger.Logger).Log("msg", "MultitenantAlertmanager: configs server poll failed", "err", err)
 		return nil, err
 	}
-	am.cfgMutex.Lock()
-	am.configsUpdatedAtUnix = getLatestUpdateTime(cfgs, am.configsUpdatedAtUnix)
-	am.cfgMutex.Unlock()
 	return cfgs, nil
 }
 
-func (am *MultitenantAlertmanager) addNewConfigs(cfgs map[string]AlertmanagerConfig) {
+func (am *MultitenantAlertmanager) addNewConfigs(cfgs []AlertmanagerConfig) {
 	// TODO: instrument how many configs we have, both valid & invalid.
 	level.Debug(logger.Logger).Log("msg", "adding configurations", "num_configs", len(cfgs))
-	for userID, config := range cfgs {
+	for _, config := range cfgs {
 
-		err := am.setConfig(userID, &config)
+		err := am.setConfig(config.UserID, &config)
 		if err != nil {
 			level.Warn(logger.Logger).Log("msg", "MultitenantAlertmanager: error applying config", "err", err)
 			continue
 		}
-
 	}
 	totalConfigs.Set(float64(len(am.cfgs)))
 }
@@ -257,22 +258,27 @@ func (am *MultitenantAlertmanager) setConfig(userID string, config *Alertmanager
 		return errors.Errorf("alertmanager config is nil for user %v", userID)
 	}
 
+	am.cfgMutex.Lock()
+	defer am.cfgMutex.Unlock()
 	// if deleted, then stop the alertmanager and delete config
-	if config.DeactivatedAtInUnix > 0 {
+	if config.DeactivatedAtInUnix > 0 || config.DeletedAtInUnix > 0 {
+		am.alertmanagersMtx.Lock()
 		if a, ok := am.alertmanagers[userID]; ok {
 			a.Stop()
-			am.alertmanagersMtx.Lock()
 			delete(am.alertmanagers, userID)
-			am.alertmanagersMtx.Unlock()
 		}
+		am.alertmanagersMtx.Unlock()
 
 		if _, ok := am.cfgs[userID]; ok {
-			am.cfgMutex.Lock()
 			delete(am.cfgs, userID)
-			am.cfgMutex.Unlock()
 		}
+		return nil
 	}
+
+	am.alertmanagersMtx.Lock()
 	_, hasExisting := am.alertmanagers[userID]
+	am.alertmanagersMtx.Unlock()
+
 	var amConfig *amconfig.Config
 	var err error
 	var hasTemplateChanges bool
@@ -293,21 +299,23 @@ func (am *MultitenantAlertmanager) setConfig(userID string, config *Alertmanager
 		return errors.Errorf("failed load alertmanager config for user %v: %v", userID, err)
 	}
 
+	am.alertmanagersMtx.Lock()
+	defer am.alertmanagersMtx.Unlock()
 	// If no Alertmanager instance exists for this user yet, start one.
 	if !hasExisting {
 		newAM, err := am.newAlertmanager(userID, amConfig)
 		if err != nil {
 			return err
 		}
-		am.alertmanagersMtx.Lock()
 		am.alertmanagers[userID] = newAM
-		am.alertmanagersMtx.Unlock()
+		am.cfgs[userID] = *config
 	} else if am.cfgs[userID].Config != config.Config || hasTemplateChanges {
 		// If the config changed, apply the new one.
 		err := am.alertmanagers[userID].ApplyConfig(userID, amConfig)
 		if err != nil {
 			return errors.Errorf("unable to apply Alertmanager config for user %v: %v", userID, err)
 		}
+		am.cfgs[userID] = *config
 	}
 	return nil
 }
@@ -351,15 +359,6 @@ func (am *MultitenantAlertmanager) ServeHTTP(w http.ResponseWriter, req *http.Re
 		return
 	}
 	userAM.mux.ServeHTTP(w, req)
-}
-
-func getLatestUpdateTime(cfgs map[string]AlertmanagerConfig, cur int64) int64 {
-	for _, c := range cfgs {
-		if c.UpdatedAtInUnix > cur {
-			cur = c.UpdatedAtInUnix
-		}
-	}
-	return cur
 }
 
 func (am *MultitenantAlertmanager) ClusterStatus(w http.ResponseWriter, req *http.Request) {
