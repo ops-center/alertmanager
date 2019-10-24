@@ -12,6 +12,8 @@ import (
 	"sync"
 	"time"
 
+	"searchlight.dev/alertmanager/pkg/logger"
+
 	"github.com/cortexproject/cortex/pkg/util"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -19,7 +21,6 @@ import (
 	"github.com/prometheus/alertmanager/cluster"
 	amconfig "github.com/prometheus/alertmanager/config"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/searchlight/alertmanager/pkg/logger"
 	"github.com/weaveworks/common/instrument"
 )
 

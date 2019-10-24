@@ -4,12 +4,13 @@ import (
 	"net/http"
 	"strings"
 
+	"searchlight.dev/alertmanager/pkg/alertmanager"
+	"searchlight.dev/alertmanager/pkg/logger"
+	"searchlight.dev/alertmanager/pkg/storage/etcd"
+
 	"github.com/go-kit/kit/log"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
-	"github.com/searchlight/alertmanager/pkg/alertmanager"
-	"github.com/searchlight/alertmanager/pkg/logger"
-	"github.com/searchlight/alertmanager/pkg/storage/etcd"
 	"github.com/spf13/cobra"
 )
 

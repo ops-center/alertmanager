@@ -7,10 +7,11 @@ import (
 	"net/http"
 	"time"
 
+	logger2 "searchlight.dev/alertmanager/pkg/logger"
+
 	"github.com/go-kit/kit/log/level"
 	"github.com/gorilla/mux"
 	amconfig "github.com/prometheus/alertmanager/config"
-	logger2 "github.com/searchlight/alertmanager/pkg/logger"
 )
 
 // API implements the configs api.

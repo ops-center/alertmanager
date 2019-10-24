@@ -1,8 +1,9 @@
 package main
 
 import (
+	"searchlight.dev/alertmanager/pkg/cmds"
+
 	"github.com/golang/glog"
-	"github.com/searchlight/alertmanager/pkg/cmds"
 )
 
 func main() {

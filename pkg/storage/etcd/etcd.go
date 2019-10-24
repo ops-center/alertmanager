@@ -6,10 +6,11 @@ import (
 	"strings"
 	"time"
 
+	am "searchlight.dev/alertmanager/pkg/alertmanager"
+
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	am "github.com/searchlight/alertmanager/pkg/alertmanager"
 	"go.etcd.io/etcd/clientv3"
 	"gopkg.in/yaml.v2"
 )
