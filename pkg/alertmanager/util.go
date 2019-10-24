@@ -19,11 +19,8 @@ func ExtractUserIDFromHTTPRequest(r *http.Request) (string, error) {
 	return uid, nil
 }
 
-func SetUserIDInHTTPRequest(userID string, r *http.Request) error {
-	uid := r.Header.Get(UserIDHeaderName)
-	if uid != "" && uid != userID {
-		return errors.New("existing userID didn't match with given userID")
+func Must(err error) {
+	if err != nil {
+		panic(err)
 	}
-	r.Header.Set(UserIDHeaderName, userID)
-	return nil
 }

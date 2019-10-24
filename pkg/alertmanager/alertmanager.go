@@ -195,11 +195,9 @@ func (am *Alertmanager) ApplyConfig(userID string, conf *config.Config) error {
 		pipeline notify.Stage
 	)
 
-	templateFiles := make([]string, len(conf.Templates), len(conf.Templates))
-	if len(conf.Templates) > 0 {
-		for i, t := range conf.Templates {
-			templateFiles[i] = filepath.Join(am.cfg.DataDir, "templates", userID, t)
-		}
+	templateFiles := make([]string, len(conf.Templates))
+	for i, t := range conf.Templates {
+		templateFiles[i] = filepath.Join(am.cfg.DataDir, "templates", userID, t)
 	}
 
 	tmpl, err := template.FromGlobs(templateFiles...)

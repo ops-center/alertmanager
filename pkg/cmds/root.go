@@ -3,6 +3,8 @@ package cmds
 import (
 	"flag"
 
+	"searchlight.dev/alertmanager/pkg/alertmanager"
+
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +17,7 @@ func NewRootCmd() *cobra.Command {
 
 	rootCmd.PersistentFlags().AddGoFlagSet(flag.CommandLine)
 	// ref: https://github.com/kubernetes/kubernetes/issues/17162#issuecomment-225596212
-	flag.CommandLine.Parse([]string{})
+	alertmanager.Must(flag.CommandLine.Parse([]string{}))
 	rootCmd.AddCommand(NewCmdRun())
 
 	return rootCmd

@@ -24,7 +24,7 @@ func NewCmdRun() *cobra.Command {
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.InitLogger()
-			logger.Logger.Log("msg", "Starting alertmanager")
+			alertmanager.Must(logger.Logger.Log("msg", "Starting alertmanager"))
 
 			if err := multiAMCfg.Validate(); err != nil {
 				return err
