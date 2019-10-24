@@ -4,12 +4,13 @@ import (
 	"net/http"
 	"strings"
 
+	"searchlight.dev/alertmanager/pkg/alertmanager"
+	"searchlight.dev/alertmanager/pkg/logger"
+	"searchlight.dev/alertmanager/pkg/storage/etcd"
+
 	"github.com/go-kit/kit/log"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
-	"github.com/searchlight/alertmanager/pkg/alertmanager"
-	"github.com/searchlight/alertmanager/pkg/logger"
-	"github.com/searchlight/alertmanager/pkg/storage/etcd"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +24,7 @@ func NewCmdRun() *cobra.Command {
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger.InitLogger()
-			logger.Logger.Log("msg", "Starting alertmanager")
+			alertmanager.Must(logger.Logger.Log("msg", "Starting alertmanager"))
 
 			if err := multiAMCfg.Validate(); err != nil {
 				return err

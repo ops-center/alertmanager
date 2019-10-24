@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-pushd $GOPATH/src/github.com/searchlight/alertmanager/artifacts/demo-webhook
+pushd $GOPATH/src/searchlight.dev/alertmanager/artifacts/demo-webhook
 
-docker build -t nightfury1204/alert-webhook:canary .
+docker build -t searchlight/alert-webhook:canary .
 
-docker push nightfury1204/alert-webhook:canary
+docker push searchlight/alert-webhook:canary
 
 popd

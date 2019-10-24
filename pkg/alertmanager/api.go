@@ -7,10 +7,11 @@ import (
 	"net/http"
 	"time"
 
+	logger2 "searchlight.dev/alertmanager/pkg/logger"
+
 	"github.com/go-kit/kit/log/level"
 	"github.com/gorilla/mux"
 	amconfig "github.com/prometheus/alertmanager/config"
-	logger2 "github.com/searchlight/alertmanager/pkg/logger"
 )
 
 // API implements the configs api.
@@ -55,7 +56,7 @@ func (a *API) getConfig(w http.ResponseWriter, r *http.Request) {
 	cfg, err := a.client.GetConfig(userID)
 	if err != nil {
 		// XXX: Untested
-		level.Error(logger).Log("msg", "error getting config", "err", err)
+		Must(level.Error(logger).Log("msg", "error getting config", "err", err))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -63,7 +64,7 @@ func (a *API) getConfig(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(cfg); err != nil {
 		// XXX: Untested
-		level.Error(logger).Log("msg", "error encoding config", "err", err)
+		Must(level.Error(logger).Log("msg", "error encoding config", "err", err))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -82,18 +83,18 @@ func (a *API) setConfig(w http.ResponseWriter, r *http.Request) {
 	var cfg AlertmanagerConfig
 	if err := json.NewDecoder(r.Body).Decode(&cfg); err != nil {
 		// XXX: Untested
-		level.Error(logger).Log("msg", "error decoding json body", "err", err)
+		Must(level.Error(logger).Log("msg", "error decoding json body", "err", err))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if err := validateAlertmanagerConfig(cfg.Config); err != nil {
-		level.Error(logger).Log("msg", "invalid Alertmanager config", "err", err)
+		Must(level.Error(logger).Log("msg", "invalid Alertmanager config", "err", err))
 		http.Error(w, fmt.Sprintf("Invalid Alertmanager config: %v", err), http.StatusBadRequest)
 		return
 	}
 
 	if err := validateTemplateFiles(cfg.TemplateFiles); err != nil {
-		level.Error(logger).Log("msg", "invalid templates", "err", err)
+		Must(level.Error(logger).Log("msg", "invalid templates", "err", err))
 		http.Error(w, fmt.Sprintf("Invalid templates: %v", err), http.StatusBadRequest)
 		return
 	}
@@ -102,7 +103,7 @@ func (a *API) setConfig(w http.ResponseWriter, r *http.Request) {
 	cfg.UpdatedAtInUnix = time.Now().Unix()
 	if err := a.client.SetConfig(&cfg); err != nil {
 		// XXX: Untested
-		level.Error(logger).Log("msg", "error storing config", "err", err)
+		Must(level.Error(logger).Log("msg", "error storing config", "err", err))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -119,11 +120,11 @@ func (a *API) deactivateConfig(w http.ResponseWriter, r *http.Request) {
 	logger := logger2.WithUserID(userID, logger2.Logger)
 
 	if err := a.client.DeactivateConfig(userID); err != nil {
-		level.Error(logger).Log("msg", "error deactivating config", "err", err)
+		Must(level.Error(logger).Log("msg", "error deactivating config", "err", err))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	level.Info(logger).Log("msg", "config deactivated", "userID", userID)
+	Must(level.Info(logger).Log("msg", "config deactivated", "userID", userID))
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -138,11 +139,11 @@ func (a *API) restoreConfig(w http.ResponseWriter, r *http.Request) {
 	logger := logger2.WithUserID(userID, logger2.Logger)
 
 	if err := a.client.RestoreConfig(userID); err != nil {
-		level.Error(logger).Log("msg", "error restoring config", "err", err)
+		Must(level.Error(logger).Log("msg", "error restoring config", "err", err))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	level.Info(logger).Log("msg", "config restored", "userID", userID)
+	Must(level.Info(logger).Log("msg", "config restored", "userID", userID))
 	w.WriteHeader(http.StatusOK)
 }
 

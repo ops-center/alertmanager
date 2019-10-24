@@ -1,4 +1,4 @@
-module github.com/searchlight/alertmanager
+module searchlight.dev/alertmanager
 
 go 1.12
 

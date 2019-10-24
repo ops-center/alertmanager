@@ -6,10 +6,11 @@ import (
 	"strings"
 	"time"
 
+	am "searchlight.dev/alertmanager/pkg/alertmanager"
+
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/pkg/errors"
-	am "github.com/searchlight/alertmanager/pkg/alertmanager"
 	"go.etcd.io/etcd/clientv3"
 	"gopkg.in/yaml.v2"
 )
@@ -114,7 +115,7 @@ func (c *Client) getWithPrefix(prefix string) ([]am.AlertmanagerConfig, error) {
 		return nil, err
 	}
 
-	amCfgList := []am.AlertmanagerConfig{}
+	var amCfgList []am.AlertmanagerConfig
 	for _, rg := range resp.Kvs {
 		amCfg := am.AlertmanagerConfig{}
 		if err := yaml.Unmarshal(rg.Value, &amCfg); err != nil {
@@ -138,15 +139,6 @@ func (c *Client) put(amCfg *am.AlertmanagerConfig) error {
 	return nil
 }
 
-func (c *Client) delete(key string) error {
-	// TODO: should delete it or just set the delete timestamp.
-	_, err := c.kv.Delete(c.ctx, key)
-	if err != nil {
-		return errors.Wrap(err, "failed to delete rule group")
-	}
-	return nil
-}
-
 // Watches the keys
 // it's blocking
 func (c *Client) Watch(ch chan am.AlertmanagerConfig) {
@@ -163,7 +155,7 @@ func (c *Client) Watch(ch chan am.AlertmanagerConfig) {
 			} else {
 				amCfg := am.AlertmanagerConfig{}
 				if err := yaml.Unmarshal(ev.Kv.Value, &amCfg); err != nil {
-					level.Warn(c.logger).Log("msg", "failed unmarshal response", "err", err)
+					am.Must(level.Warn(c.logger).Log("msg", "failed unmarshal response", "err", err))
 				} else {
 					ch <- amCfg
 				}
@@ -173,7 +165,7 @@ func (c *Client) Watch(ch chan am.AlertmanagerConfig) {
 }
 
 func (c *Client) Close() {
-	c.cl.Close()
+	am.Must(c.cl.Close())
 }
 
 func getKey(usedID string) string {

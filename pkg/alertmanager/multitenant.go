@@ -12,6 +12,9 @@ import (
 	"sync"
 	"time"
 
+	"searchlight.dev/alertmanager/pkg/logger"
+
+	utilerrors "github.com/appscode/go/util/errors"
 	"github.com/cortexproject/cortex/pkg/util"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -19,7 +22,6 @@ import (
 	"github.com/prometheus/alertmanager/cluster"
 	amconfig "github.com/prometheus/alertmanager/config"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/searchlight/alertmanager/pkg/logger"
 	"github.com/weaveworks/common/instrument"
 )
 
@@ -64,9 +66,8 @@ type MultitenantAlertmanager struct {
 	configsClient AlertmanagerGetter
 
 	// All the organization configurations that we have. Only used for instrumentation.
-	cfgs                 map[string]AlertmanagerConfig
-	configsUpdatedAtUnix int64
-	cfgMutex             sync.RWMutex
+	cfgs     map[string]AlertmanagerConfig
+	cfgMutex sync.RWMutex
 
 	alertmanagersMtx sync.Mutex
 	alertmanagers    map[string]*Alertmanager
@@ -123,7 +124,7 @@ func NewMultitenantAlertmanager(cfg *MultitenantAlertmanagerConfig, configClient
 			am.cfg.PeerReconnectTimeout,
 		)
 		if err != nil {
-			level.Warn(logger.Logger).Log("msg", "unable to join gossip mesh", "err", err)
+			Must(level.Warn(logger.Logger).Log("msg", "unable to join gossip mesh", "err", err))
 		}
 
 		ctx, cancle := context.WithTimeout(context.Background(), am.cfg.SettleTimeout)
@@ -145,7 +146,7 @@ func (am *MultitenantAlertmanager) Run() {
 		case <-ticker.C:
 			err := am.updateConfigs()
 			if err != nil {
-				level.Warn(logger.Logger).Log("msg", "MultitenantAlertmanager: error updating configs", "err", err)
+				Must(level.Warn(logger.Logger).Log("msg", "MultitenantAlertmanager: error updating configs", "err", err))
 			}
 		case <-am.stop:
 			ticker.Stop()
@@ -167,10 +168,10 @@ func (am *MultitenantAlertmanager) Stop() {
 	}
 	if am.peer != nil {
 		if err := am.peer.Leave(10 * time.Second); err != nil {
-			level.Warn(logger.Logger).Log("msg", "unable to leave gossip mesh", "err", err)
+			Must(level.Warn(logger.Logger).Log("msg", "unable to leave gossip mesh", "err", err))
 		}
 	}
-	level.Debug(logger.Logger).Log("msg", "MultitenantAlertmanager stopped")
+	Must(level.Debug(logger.Logger).Log("msg", "MultitenantAlertmanager stopped"))
 }
 
 // Load the full set of configurations from the server, retrying with backoff
@@ -180,10 +181,10 @@ func (am *MultitenantAlertmanager) loadAllConfigs() []AlertmanagerConfig {
 	for {
 		cfgs, err := am.poll(true)
 		if err == nil {
-			level.Debug(logger.Logger).Log("msg", "MultitenantAlertmanager: initial configuration load", "num_configs", len(cfgs))
+			Must(level.Debug(logger.Logger).Log("msg", "MultitenantAlertmanager: initial configuration load", "num_configs", len(cfgs)))
 			return cfgs
 		}
-		level.Warn(logger.Logger).Log("msg", "MultitenantAlertmanager: error fetching all configurations, backing off", "err", err)
+		Must(level.Warn(logger.Logger).Log("msg", "MultitenantAlertmanager: error fetching all configurations, backing off", "err", err))
 		backoff.Wait()
 	}
 }
@@ -211,7 +212,7 @@ func (am *MultitenantAlertmanager) poll(all bool) ([]AlertmanagerConfig, error) 
 		return err
 	})
 	if err != nil {
-		level.Warn(logger.Logger).Log("msg", "MultitenantAlertmanager: configs server poll failed", "err", err)
+		Must(level.Warn(logger.Logger).Log("msg", "MultitenantAlertmanager: configs server poll failed", "err", err))
 		return nil, err
 	}
 	return cfgs, nil
@@ -219,12 +220,12 @@ func (am *MultitenantAlertmanager) poll(all bool) ([]AlertmanagerConfig, error) 
 
 func (am *MultitenantAlertmanager) addNewConfigs(cfgs []AlertmanagerConfig) {
 	// TODO: instrument how many configs we have, both valid & invalid.
-	level.Debug(logger.Logger).Log("msg", "adding configurations", "num_configs", len(cfgs))
+	Must(level.Debug(logger.Logger).Log("msg", "adding configurations", "num_configs", len(cfgs)))
 	for _, config := range cfgs {
 
 		err := am.setConfig(config.UserID, &config)
 		if err != nil {
-			level.Warn(logger.Logger).Log("msg", "MultitenantAlertmanager: error applying config", "err", err)
+			Must(level.Warn(logger.Logger).Log("msg", "MultitenantAlertmanager: error applying config", "err", err))
 			continue
 		}
 	}
@@ -269,9 +270,7 @@ func (am *MultitenantAlertmanager) setConfig(userID string, config *Alertmanager
 		}
 		am.alertmanagersMtx.Unlock()
 
-		if _, ok := am.cfgs[userID]; ok {
-			delete(am.cfgs, userID)
-		}
+		delete(am.cfgs, userID)
 		return nil
 	}
 
@@ -381,7 +380,7 @@ func (am *MultitenantAlertmanager) ClusterStatus(w http.ResponseWriter, req *htt
 			Name: self.Name,
 			Addr: fmt.Sprintf("%s:%d", self.Addr.String(), self.Port),
 		}
-		mList := []nodeInfo{}
+		var mList []nodeInfo
 		for _, nd := range am.peer.Peers() {
 			mList = append(mList, nodeInfo{
 				Name: nd.Name,
@@ -394,8 +393,7 @@ func (am *MultitenantAlertmanager) ClusterStatus(w http.ResponseWriter, req *htt
 	}
 	if err := json.NewEncoder(w).Encode(status); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(err.Error()))
-		return
+		_, e2 := w.Write([]byte(err.Error()))
+		Must(utilerrors.NewAggregate([]error{err, e2}))
 	}
-	return
 }

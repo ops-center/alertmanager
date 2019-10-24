@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: alert-webhook
-          image: nightfury1204/alert-webhook:canary
+          image: searchlight/alert-webhook:canary
           ports:
             - containerPort: 5001
 ---
