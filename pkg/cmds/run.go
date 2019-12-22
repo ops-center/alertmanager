@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strings"
 
-	"searchlight.dev/alertmanager/pkg/alertmanager"
-	"searchlight.dev/alertmanager/pkg/logger"
-	"searchlight.dev/alertmanager/pkg/storage/etcd"
+	"go.searchlight.dev/alertmanager/pkg/alertmanager"
+	"go.searchlight.dev/alertmanager/pkg/logger"
+	"go.searchlight.dev/alertmanager/pkg/storage/etcd"
 
 	"github.com/go-kit/kit/log"
 	"github.com/gorilla/mux"

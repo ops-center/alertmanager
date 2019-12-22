@@ -3,7 +3,7 @@ package cmds
 import (
 	"flag"
 
-	"searchlight.dev/alertmanager/pkg/alertmanager"
+	"go.searchlight.dev/alertmanager/pkg/alertmanager"
 
 	"github.com/spf13/cobra"
 )

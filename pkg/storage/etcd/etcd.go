@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	am "searchlight.dev/alertmanager/pkg/alertmanager"
+	am "go.searchlight.dev/alertmanager/pkg/alertmanager"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
