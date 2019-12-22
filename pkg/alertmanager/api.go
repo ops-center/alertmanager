@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	logger2 "searchlight.dev/alertmanager/pkg/logger"
+	logger2 "go.searchlight.dev/alertmanager/pkg/logger"
 
 	"github.com/go-kit/kit/log/level"
 	"github.com/gorilla/mux"
