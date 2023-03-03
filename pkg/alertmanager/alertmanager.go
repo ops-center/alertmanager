@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+
 	"github.com/go-kit/kit/log"
 	apiv1 "github.com/prometheus/alertmanager/api/v1"
 	apiv2 "github.com/prometheus/alertmanager/api/v2"

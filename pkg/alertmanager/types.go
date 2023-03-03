@@ -30,3 +30,5 @@ type AlertmanagerClient interface {
 
 	RestoreConfig(userID string) error
 }
+
+

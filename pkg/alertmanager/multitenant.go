@@ -241,11 +241,11 @@ func (am *MultitenantAlertmanager) createTemplatesFile(userID, fn, content strin
 
 	file := filepath.Join(dir, fn)
 	// Check if the template file already exists and if it has changed
-	if tmpl, err := ioutil.ReadFile(file); err == nil && string(tmpl) == content {
+	if tmpl, err := os.ReadFile(file); err == nil && string(tmpl) == content {
 		return false, nil
 	}
 
-	if err := ioutil.WriteFile(file, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(file, []byte(content), 0644); err != nil {
 		return false, errors.Errorf("unable to create Alertmanager template file %q: %s", file, err)
 	}
 

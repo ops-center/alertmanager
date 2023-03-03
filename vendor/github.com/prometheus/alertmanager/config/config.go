@@ -187,7 +187,7 @@ func Load(s string) (*Config, error) {
 
 // LoadFile parses the given YAML file into a Config.
 func LoadFile(filename string) (*Config, []byte, error) {
-	content, err := ioutil.ReadFile(filename)
+	content, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, nil, err
 	}

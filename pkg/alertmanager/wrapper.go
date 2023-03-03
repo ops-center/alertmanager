@@ -51,3 +51,5 @@ func (am *AlertmanagerGetterWrapper) RunUpdatesCollector() {
 		am.mtx.Unlock()
 	}
 }
+
+

@@ -1,6 +1,7 @@
 package main
 
 import (
+
 	"go.searchlight.dev/alertmanager/pkg/cmds"
 
 	"github.com/golang/glog"

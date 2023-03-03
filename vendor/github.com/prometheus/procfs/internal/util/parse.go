@@ -51,7 +51,7 @@ func ParseUint64s(ss []string) ([]uint64, error) {
 
 // ReadUintFromFile reads a file and attempts to parse a uint64 from it.
 func ReadUintFromFile(path string) (uint64, error) {
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return 0, err
 	}

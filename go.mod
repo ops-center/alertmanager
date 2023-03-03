@@ -13,6 +13,8 @@ require (
 	github.com/gorilla/mux v1.7.2
 	github.com/gorilla/websocket v1.4.1 // indirect
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
+	github.com/json-iterator/go v1.1.12
+	github.com/modern-go/reflect2 v1.0.2
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/alertmanager v0.17.0
 	github.com/prometheus/client_golang v0.9.3-0.20190127221311-3c4408c8b829
@@ -24,7 +26,10 @@ require (
 	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
 	go.etcd.io/etcd v3.3.13+incompatible
 	go.uber.org/zap v1.13.0 // indirect
+	golang.org/x/crypto v0.6.0
+	golang.org/x/net v0.7.0
 	gopkg.in/yaml.v2 v2.2.4
+	kmodules.xyz/resource-metadata v0.15.0
 )
 
 replace (

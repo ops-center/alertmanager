@@ -61,11 +61,11 @@ func ParseProtoReader(ctx context.Context, reader io.Reader, req proto.Message, 
 	var err error
 	switch compression {
 	case NoCompression:
-		body, err = ioutil.ReadAll(reader)
+		body, err = io.ReadAll(reader)
 	case FramedSnappy:
-		body, err = ioutil.ReadAll(snappy.NewReader(reader))
+		body, err = io.ReadAll(snappy.NewReader(reader))
 	case RawSnappy:
-		body, err = ioutil.ReadAll(reader)
+		body, err = io.ReadAll(reader)
 		if err == nil {
 			body, err = snappy.Decode(nil, body)
 		}

@@ -145,7 +145,7 @@ func NewClient(address string) (*Client, error) {
 
 // HTTPRequest wraps an ordinary HTTPRequest with a gRPC one
 func HTTPRequest(r *http.Request) (*httpgrpc.HTTPRequest, error) {
-	body, err := ioutil.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, err
 	}

@@ -60,11 +60,11 @@ func NewInClusterK8sClient() (K8sClient, error) {
 	if len(host) == 0 || len(port) == 0 {
 		return nil, fmt.Errorf("unable to load in-cluster configuration, KUBERNETES_SERVICE_HOST and KUBERNETES_SERVICE_PORT must be defined")
 	}
-	token, err := ioutil.ReadFile(serviceAccountToken)
+	token, err := os.ReadFile(serviceAccountToken)
 	if err != nil {
 		return nil, err
 	}
-	ca, err := ioutil.ReadFile(serviceAccountCACert)
+	ca, err := os.ReadFile(serviceAccountCACert)
 	if err != nil {
 		return nil, err
 	}
