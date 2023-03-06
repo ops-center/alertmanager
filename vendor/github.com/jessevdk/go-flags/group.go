@@ -73,6 +73,13 @@ func (g *Group) AddGroup(shortDescription string, longDescription string, data i
 	return group, nil
 }
 
+// AddOption adds a new option to this group.
+func (g *Group) AddOption(option *Option, data interface{}) {
+	option.value = reflect.ValueOf(data)
+	option.group = g
+	g.options = append(g.options, option)
+}
+
 // Groups returns the list of groups embedded in this group.
 func (g *Group) Groups() []*Group {
 	return g.groups
@@ -166,6 +173,18 @@ func (g *Group) optionByName(name string, namematch func(*Option, string) bool) 
 	})
 
 	return retopt
+}
+
+func (g *Group) showInHelp() bool {
+	if g.Hidden {
+		return false
+	}
+	for _, opt := range g.options {
+		if opt.showInHelp() {
+			return true
+		}
+	}
+	return false
 }
 
 func (g *Group) eachGroup(f func(*Group)) {

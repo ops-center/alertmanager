@@ -18,6 +18,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/alertmanager/pkg/labels"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
 )
@@ -128,19 +129,18 @@ func (m *memMarker) registerMetrics(r prometheus.Registerer) {
 
 // Count implements Marker.
 func (m *memMarker) Count(states ...AlertState) int {
-	count := 0
-
 	m.mtx.RLock()
 	defer m.mtx.RUnlock()
 
 	if len(states) == 0 {
-		count = len(m.m)
-	} else {
-		for _, status := range m.m {
-			for _, state := range states {
-				if status.State == state {
-					count++
-				}
+		return len(m.m)
+	}
+
+	var count int
+	for _, status := range m.m {
+		for _, state := range states {
+			if status.State == state {
+				count++
 			}
 		}
 	}
@@ -205,10 +205,7 @@ func (m *memMarker) SetActive(alert model.Fingerprint) {
 
 	s, found := m.m[alert]
 	if !found {
-		s = &AlertStatus{
-			SilencedBy:  []string{},
-			InhibitedBy: []string{},
-		}
+		s = &AlertStatus{}
 		m.m[alert] = s
 	}
 
@@ -411,9 +408,9 @@ func (f MuteFunc) Mutes(lset model.LabelSet) bool { return f(lset) }
 type Silence struct {
 	// A unique identifier across all connected instances.
 	ID string `json:"id"`
-	// A set of matchers determining if a label set is affect
+	// A set of matchers determining if a label set is affected
 	// by the silence.
-	Matchers Matchers `json:"matchers"`
+	Matchers labels.Matchers `json:"matchers"`
 
 	// Time range of the silence.
 	//
