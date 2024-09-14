@@ -612,6 +612,10 @@ func init() {
         "isRegex"
       ],
       "properties": {
+        "isEqual": {
+          "type": "boolean",
+          "default": true
+        },
         "isRegex": {
           "type": "boolean"
         },
@@ -1306,7 +1310,6 @@ func init() {
         },
         "peers": {
           "type": "array",
-          "minimum": 0,
           "items": {
             "$ref": "#/definitions/peerStatus"
           }
@@ -1422,6 +1425,10 @@ func init() {
         "isRegex"
       ],
       "properties": {
+        "isEqual": {
+          "type": "boolean",
+          "default": true
+        },
         "isRegex": {
           "type": "boolean"
         },

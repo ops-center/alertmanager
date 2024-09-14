@@ -5,26 +5,19 @@ go 1.12
 require (
 	github.com/appscode/go v0.0.0-20191119085241-0887d8ec2ecc
 	github.com/coreos/bbolt v1.3.3 // indirect
-	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf // indirect
-	github.com/coreos/pkg v0.0.0-20180928190104-399ea9e2e55f // indirect
-	github.com/cortexproject/cortex v0.0.0-20190525232146-bec610fe59c0
-	github.com/go-kit/kit v0.8.0
+	github.com/cortexproject/cortex v1.10.0-rc.0
+	github.com/go-kit/kit v0.10.0
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
-	github.com/gorilla/mux v1.7.2
-	github.com/gorilla/websocket v1.4.1 // indirect
-	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
-	github.com/pkg/errors v0.8.1
-	github.com/prometheus/alertmanager v0.17.0
-	github.com/prometheus/client_golang v0.9.3-0.20190127221311-3c4408c8b829
-	github.com/prometheus/common v0.3.0
-	github.com/spf13/cobra v0.0.4
-	github.com/spf13/pflag v1.0.3
-	github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5 // indirect
-	github.com/weaveworks/common v0.0.0-20190515112636-283749cfd16f
-	github.com/xiang90/probing v0.0.0-20190116061207-43a291ad63a2 // indirect
+	github.com/gorilla/mux v1.7.3
+	github.com/pkg/errors v0.9.1
+	github.com/prometheus/alertmanager v0.22.1-0.20210603124511-8b584eb2265e
+	github.com/prometheus/client_golang v1.10.0
+	github.com/prometheus/common v0.26.1-0.20210603143733-6ef301f414bf
+	github.com/spf13/cobra v1.1.1
+	github.com/spf13/pflag v1.0.5
+	github.com/weaveworks/common v0.0.0-20210419092856-009d1eebd624
 	go.etcd.io/etcd v3.3.13+incompatible
-	go.uber.org/zap v1.13.0 // indirect
-	gopkg.in/yaml.v2 v2.2.4
+	gopkg.in/yaml.v2 v2.4.0
 )
 
 replace (

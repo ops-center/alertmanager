@@ -24,7 +24,7 @@ import (
 
 	"github.com/go-openapi/runtime"
 
-	models "github.com/prometheus/alertmanager/api/v2/models"
+	"github.com/prometheus/alertmanager/api/v2/models"
 )
 
 // GetSilenceOKCode is the HTTP code returned for type GetSilenceOK
@@ -135,5 +135,4 @@ func (o *GetSilenceInternalServerError) WriteResponse(rw http.ResponseWriter, pr
 	if err := producer.Produce(rw, payload); err != nil {
 		panic(err) // let the recovery middleware deal with this
 	}
-
 }

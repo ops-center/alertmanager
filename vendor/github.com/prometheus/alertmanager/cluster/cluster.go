@@ -33,6 +33,29 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// ClusterPeer represents a single Peer in a gossip cluster.
+type ClusterPeer interface {
+	// Name returns the unique identifier of this peer in the cluster.
+	Name() string
+	// Status returns a status string representing the peer state.
+	Status() string
+	// Peers returns the peer nodes in the cluster.
+	Peers() []ClusterMember
+}
+
+// ClusterMember interface that represents node peers in a cluster
+type ClusterMember interface {
+	// Name returns the name of the node
+	Name() string
+	// Address returns the IP address of the node
+	Address() string
+}
+
+// ClusterChannel supports state broadcasting across peers.
+type ClusterChannel interface {
+	Broadcast([]byte)
+}
+
 // Peer is a single peer in a gossip cluster.
 type Peer struct {
 	mlist    *memberlist.Memberlist
@@ -103,7 +126,7 @@ const (
 	DefaultReconnectInterval = 10 * time.Second
 	DefaultReconnectTimeout  = 6 * time.Hour
 	DefaultRefreshInterval   = 15 * time.Second
-	maxGossipPacketSize      = 1400
+	MaxGossipPacketSize      = 1400
 )
 
 func Create(
@@ -121,11 +144,11 @@ func Create(
 ) (*Peer, error) {
 	bindHost, bindPortStr, err := net.SplitHostPort(bindAddr)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "invalid listen address")
 	}
 	bindPort, err := strconv.Atoi(bindPortStr)
 	if err != nil {
-		return nil, errors.Wrap(err, "invalid listen address")
+		return nil, errors.Wrapf(err, "address %s: invalid port", bindAddr)
 	}
 
 	var advertiseHost string
@@ -138,7 +161,7 @@ func Create(
 		}
 		advertisePort, err = strconv.Atoi(advertisePortStr)
 		if err != nil {
-			return nil, errors.Wrap(err, "invalid advertise address, wrong port")
+			return nil, errors.Wrapf(err, "address %s: invalid port", advertiseAddr)
 		}
 	}
 
@@ -179,7 +202,7 @@ func Create(
 		knownPeers:    knownPeers,
 	}
 
-	p.register(reg)
+	p.register(reg, name.String())
 
 	retransmit := len(knownPeers) / 2
 	if retransmit < 3 {
@@ -192,6 +215,8 @@ func Create(
 	cfg.BindAddr = bindHost
 	cfg.BindPort = bindPort
 	cfg.Delegate = p.delegate
+	cfg.Ping = p.delegate
+	cfg.Alive = p.delegate
 	cfg.Events = p.delegate
 	cfg.GossipInterval = gossipInterval
 	cfg.PushPullInterval = pushPullInterval
@@ -200,7 +225,7 @@ func Create(
 	cfg.ProbeInterval = probeInterval
 	cfg.LogOutput = &logWriter{l: l}
 	cfg.GossipNodes = retransmit
-	cfg.UDPBufferSize = maxGossipPacketSize
+	cfg.UDPBufferSize = MaxGossipPacketSize
 
 	if advertiseHost != "" {
 		cfg.AdvertiseAddr = advertiseHost
@@ -258,8 +283,8 @@ func (p *Peer) setInitialFailed(peers []string, myAddr string) {
 		return
 	}
 
-	p.peerLock.RLock()
-	defer p.peerLock.RUnlock()
+	p.peerLock.Lock()
+	defer p.peerLock.Unlock()
 
 	now := time.Now()
 	for _, peerAddr := range peers {
@@ -304,7 +329,15 @@ func (l *logWriter) Write(b []byte) (int, error) {
 	return len(b), level.Debug(l.l).Log("memberlist", string(b))
 }
 
-func (p *Peer) register(reg prometheus.Registerer) {
+func (p *Peer) register(reg prometheus.Registerer, name string) {
+	peerInfo := prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Name:        "alertmanager_cluster_peer_info",
+			Help:        "A metric with a constant '1' value labeled by peer name.",
+			ConstLabels: prometheus.Labels{"peer": name},
+		},
+	)
+	peerInfo.Set(1)
 	clusterFailedPeers := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 		Name: "alertmanager_cluster_failed_peers",
 		Help: "Number indicating the current number of failed peers in the cluster.",
@@ -346,7 +379,7 @@ func (p *Peer) register(reg prometheus.Registerer) {
 		Help: "A counter of the number of peers that have joined.",
 	})
 
-	reg.MustRegister(clusterFailedPeers, p.failedReconnectionsCounter, p.reconnectionsCounter,
+	reg.MustRegister(peerInfo, clusterFailedPeers, p.failedReconnectionsCounter, p.reconnectionsCounter,
 		p.peerLeaveCounter, p.peerUpdateCounter, p.peerJoinCounter, p.refreshCounter, p.failedRefreshCounter)
 }
 
@@ -395,7 +428,7 @@ func (p *Peer) reconnect() {
 		// peerJoin().
 		if _, err := p.mlist.Join([]string{pr.Address()}); err != nil {
 			p.failedReconnectionsCounter.Inc()
-			level.Debug(logger).Log("result", "failure", "peer", pr.Node, "addr", pr.Address())
+			level.Debug(logger).Log("result", "failure", "peer", pr.Node, "addr", pr.Address(), "err", err)
 		} else {
 			p.reconnectionsCounter.Inc()
 			level.Debug(logger).Log("result", "success", "peer", pr.Node, "addr", pr.Address())
@@ -425,7 +458,7 @@ func (p *Peer) refresh() {
 		if !isPeerFound {
 			if _, err := p.mlist.Join([]string{peer}); err != nil {
 				p.failedRefreshCounter.Inc()
-				level.Warn(logger).Log("result", "failure", "addr", peer)
+				level.Warn(logger).Log("result", "failure", "addr", peer, "err", err)
 			} else {
 				p.refreshCounter.Inc()
 				level.Debug(logger).Log("result", "success", "addr", peer)
@@ -502,15 +535,18 @@ func (p *Peer) peerUpdate(n *memberlist.Node) {
 
 // AddState adds a new state that will be gossiped. It returns a channel to which
 // broadcast messages for the state can be sent.
-func (p *Peer) AddState(key string, s State, reg prometheus.Registerer) *Channel {
+func (p *Peer) AddState(key string, s State, reg prometheus.Registerer) ClusterChannel {
+	p.mtx.Lock()
 	p.states[key] = s
+	p.mtx.Unlock()
+
 	send := func(b []byte) {
 		p.delegate.bcast.QueueBroadcast(simpleBroadcast(b))
 	}
 	peers := func() []*memberlist.Node {
-		nodes := p.Peers()
+		nodes := p.mlist.Members()
 		for i, n := range nodes {
-			if n.Name == p.Self().Name {
+			if n.String() == p.Self().Name {
 				nodes = append(nodes[:i], nodes[i+1:]...)
 				break
 			}
@@ -551,8 +587,13 @@ func (p *Peer) Ready() bool {
 }
 
 // Wait until Settle() has finished.
-func (p *Peer) WaitReady() {
-	<-p.readyc
+func (p *Peer) WaitReady(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-p.readyc:
+		return nil
+	}
 }
 
 // Return a status string representing the peer state.
@@ -581,14 +622,31 @@ func (p *Peer) Self() *memberlist.Node {
 	return p.mlist.LocalNode()
 }
 
+// Member represents a member in the cluster.
+type Member struct {
+	node *memberlist.Node
+}
+
+// Name implements cluster.ClusterMember
+func (m Member) Name() string { return m.node.Name }
+
+// Address implements cluster.ClusterMember
+func (m Member) Address() string { return m.node.Address() }
+
 // Peers returns the peers in the cluster.
-func (p *Peer) Peers() []*memberlist.Node {
-	return p.mlist.Members()
+func (p *Peer) Peers() []ClusterMember {
+	peers := make([]ClusterMember, 0, len(p.mlist.Members()))
+	for _, member := range p.mlist.Members() {
+		peers = append(peers, Member{
+			node: member,
+		})
+	}
+	return peers
 }
 
 // Position returns the position of the peer in the cluster.
 func (p *Peer) Position() int {
-	all := p.Peers()
+	all := p.mlist.Members()
 	sort.Slice(all, func(i, j int) bool {
 		return all[i].Name < all[j].Name
 	})

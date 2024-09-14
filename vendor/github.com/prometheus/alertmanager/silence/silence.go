@@ -29,14 +29,15 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	uuid "github.com/gofrs/uuid"
 	"github.com/matttproud/golang_protobuf_extensions/pbutil"
 	"github.com/pkg/errors"
 	"github.com/prometheus/alertmanager/cluster"
+	"github.com/prometheus/alertmanager/pkg/labels"
 	pb "github.com/prometheus/alertmanager/silence/silencepb"
 	"github.com/prometheus/alertmanager/types"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/model"
-	"github.com/satori/go.uuid"
 )
 
 // ErrNotFound is returned if a silence was not found.
@@ -49,12 +50,12 @@ func utcNow() time.Time {
 	return time.Now().UTC()
 }
 
-type matcherCache map[*pb.Silence]types.Matchers
+type matcherCache map[*pb.Silence]labels.Matchers
 
 // Get retrieves the matchers for a given silence. If it is a missed cache
 // access, it compiles and adds the matchers of the requested silence to the
 // cache.
-func (c matcherCache) Get(s *pb.Silence) (types.Matchers, error) {
+func (c matcherCache) Get(s *pb.Silence) (labels.Matchers, error) {
 	if m, ok := c[s]; ok {
 		return m, nil
 	}
@@ -63,33 +64,32 @@ func (c matcherCache) Get(s *pb.Silence) (types.Matchers, error) {
 
 // add compiles a silences' matchers and adds them to the cache.
 // It returns the compiled matchers.
-func (c matcherCache) add(s *pb.Silence) (types.Matchers, error) {
-	var (
-		ms types.Matchers
-		mt *types.Matcher
-	)
+func (c matcherCache) add(s *pb.Silence) (labels.Matchers, error) {
+	ms := make(labels.Matchers, len(s.Matchers))
 
-	for _, m := range s.Matchers {
-		mt = &types.Matcher{
-			Name:  m.Name,
-			Value: m.Pattern,
-		}
+	for i, m := range s.Matchers {
+		var mt labels.MatchType
 		switch m.Type {
 		case pb.Matcher_EQUAL:
-			mt.IsRegex = false
+			mt = labels.MatchEqual
+		case pb.Matcher_NOT_EQUAL:
+			mt = labels.MatchNotEqual
 		case pb.Matcher_REGEXP:
-			mt.IsRegex = true
+			mt = labels.MatchRegexp
+		case pb.Matcher_NOT_REGEXP:
+			mt = labels.MatchNotRegexp
+		default:
+			return nil, errors.Errorf("unknown matcher type %q", m.Type)
 		}
-		err := mt.Init()
+		matcher, err := labels.NewMatcher(mt, m.Name, m.Pattern)
 		if err != nil {
 			return nil, err
 		}
 
-		ms = append(ms, mt)
+		ms[i] = matcher
 	}
 
 	c[s] = ms
-
 	return ms, nil
 }
 
@@ -122,7 +122,7 @@ func (s *Silencer) Mutes(lset model.LabelSet) bool {
 	)
 	if markerVersion == s.silences.Version() {
 		// No new silences added, just need to check which of the old
-		// silences are still revelant.
+		// silences are still relevant.
 		if len(ids) == 0 {
 			// Super fast path: No silences ever applied to this
 			// alert, none have been added. We are done.
@@ -225,12 +225,14 @@ func newMetrics(r prometheus.Registerer, s *Silences) *metrics {
 	m := &metrics{}
 
 	m.gcDuration = prometheus.NewSummary(prometheus.SummaryOpts{
-		Name: "alertmanager_silences_gc_duration_seconds",
-		Help: "Duration of the last silence garbage collection cycle.",
+		Name:       "alertmanager_silences_gc_duration_seconds",
+		Help:       "Duration of the last silence garbage collection cycle.",
+		Objectives: map[float64]float64{},
 	})
 	m.snapshotDuration = prometheus.NewSummary(prometheus.SummaryOpts{
-		Name: "alertmanager_silences_snapshot_duration_seconds",
-		Help: "Duration of the last silence snapshot.",
+		Name:       "alertmanager_silences_snapshot_duration_seconds",
+		Help:       "Duration of the last silence snapshot.",
+		Objectives: map[float64]float64{},
 	})
 	m.snapshotSize = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: "alertmanager_silences_snapshot_size_bytes",
@@ -418,11 +420,11 @@ func validateMatcher(m *pb.Matcher) error {
 		return fmt.Errorf("invalid label name %q", m.Name)
 	}
 	switch m.Type {
-	case pb.Matcher_EQUAL:
+	case pb.Matcher_EQUAL, pb.Matcher_NOT_EQUAL:
 		if !model.LabelValue(m.Pattern).IsValid() {
 			return fmt.Errorf("invalid label value %q", m.Pattern)
 		}
-	case pb.Matcher_REGEXP:
+	case pb.Matcher_REGEXP, pb.Matcher_NOT_REGEXP:
 		if _, err := regexp.Compile(m.Pattern); err != nil {
 			return fmt.Errorf("invalid regular expression %q: %s", m.Pattern, err)
 		}
@@ -432,6 +434,18 @@ func validateMatcher(m *pb.Matcher) error {
 	return nil
 }
 
+func matchesEmpty(m *pb.Matcher) bool {
+	switch m.Type {
+	case pb.Matcher_EQUAL:
+		return m.Pattern == ""
+	case pb.Matcher_REGEXP:
+		matched, _ := regexp.MatchString(m.Pattern, "")
+		return matched
+	default:
+		return false
+	}
+}
+
 func validateSilence(s *pb.Silence) error {
 	if s.Id == "" {
 		return errors.New("ID missing")
@@ -439,10 +453,15 @@ func validateSilence(s *pb.Silence) error {
 	if len(s.Matchers) == 0 {
 		return errors.New("at least one matcher required")
 	}
+	allMatchEmpty := true
 	for i, m := range s.Matchers {
 		if err := validateMatcher(m); err != nil {
 			return fmt.Errorf("invalid label matcher %d: %s", i, err)
 		}
+		allMatchEmpty = allMatchEmpty && matchesEmpty(m)
+	}
+	if allMatchEmpty {
+		return errors.New("at least one matcher must not match the empty string")
 	}
 	if s.StartsAt.IsZero() {
 		return errors.New("invalid zero start timestamp")
@@ -521,7 +540,11 @@ func (s *Silences) Set(sil *pb.Silence) (string, error) {
 		}
 	}
 	// If we got here it's either a new silence or a replacing one.
-	sil.Id = uuid.NewV4().String()
+	uid, err := uuid.NewV4()
+	if err != nil {
+		return "", errors.Wrap(err, "generate uuid")
+	}
+	sil.Id = uid.String()
 
 	if sil.StartsAt.Before(now) {
 		sil.StartsAt = now
@@ -599,22 +622,11 @@ type query struct {
 // should be dropped from a result set for a given time.
 type silenceFilter func(*pb.Silence, *Silences, time.Time) (bool, error)
 
-var errNotSupported = errors.New("query parameter not supported")
-
 // QIDs configures a query to select the given silence IDs.
 func QIDs(ids ...string) QueryParam {
 	return func(q *query) error {
 		q.ids = append(q.ids, ids...)
 		return nil
-	}
-}
-
-// QTimeRange configures a query to search for silences that are active
-// in the given time range.
-// TODO(fabxc): not supported yet.
-func QTimeRange(start, end time.Time) QueryParam {
-	return func(q *query) error {
-		return errNotSupported
 	}
 }
 
@@ -626,7 +638,7 @@ func QMatches(set model.LabelSet) QueryParam {
 			if err != nil {
 				return true, err
 			}
-			return m.Match(set), nil
+			return m.Matches(set), nil
 		}
 		q.filters = append(q.filters, f)
 		return nil
