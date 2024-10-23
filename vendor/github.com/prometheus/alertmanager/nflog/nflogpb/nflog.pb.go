@@ -12,6 +12,7 @@ import (
 
 	io "io"
 	math "math"
+	math_bits "math/bits"
 	time "time"
 )
 
@@ -25,7 +26,7 @@ var _ = time.Kitchen
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type Receiver struct {
 	// Configured name of the receiver group.
@@ -54,7 +55,7 @@ func (m *Receiver) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Receiver.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -111,7 +112,7 @@ func (m *Entry) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_Entry.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -157,7 +158,7 @@ func (m *MeshEntry) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return xxx_messageInfo_MeshEntry.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
@@ -216,7 +217,7 @@ var fileDescriptor_c2d9785ad9c3e602 = []byte{
 func (m *Receiver) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -224,37 +225,45 @@ func (m *Receiver) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Receiver) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Receiver) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.GroupName) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintNflog(dAtA, i, uint64(len(m.GroupName)))
-		i += copy(dAtA[i:], m.GroupName)
-	}
-	if len(m.Integration) > 0 {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintNflog(dAtA, i, uint64(len(m.Integration)))
-		i += copy(dAtA[i:], m.Integration)
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
 	}
 	if m.Idx != 0 {
-		dAtA[i] = 0x18
-		i++
 		i = encodeVarintNflog(dAtA, i, uint64(m.Idx))
+		i--
+		dAtA[i] = 0x18
 	}
-	if m.XXX_unrecognized != nil {
-		i += copy(dAtA[i:], m.XXX_unrecognized)
+	if len(m.Integration) > 0 {
+		i -= len(m.Integration)
+		copy(dAtA[i:], m.Integration)
+		i = encodeVarintNflog(dAtA, i, uint64(len(m.Integration)))
+		i--
+		dAtA[i] = 0x12
 	}
-	return i, nil
+	if len(m.GroupName) > 0 {
+		i -= len(m.GroupName)
+		copy(dAtA[i:], m.GroupName)
+		i = encodeVarintNflog(dAtA, i, uint64(len(m.GroupName)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *Entry) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -262,50 +271,37 @@ func (m *Entry) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *Entry) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Entry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.GroupKey) > 0 {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintNflog(dAtA, i, uint64(len(m.GroupKey)))
-		i += copy(dAtA[i:], m.GroupKey)
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
 	}
-	if m.Receiver != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintNflog(dAtA, i, uint64(m.Receiver.Size()))
-		n1, err := m.Receiver.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
+	if len(m.ResolvedAlerts) > 0 {
+		dAtA2 := make([]byte, len(m.ResolvedAlerts)*10)
+		var j1 int
+		for _, num := range m.ResolvedAlerts {
+			for num >= 1<<7 {
+				dAtA2[j1] = uint8(uint64(num)&0x7f | 0x80)
+				num >>= 7
+				j1++
+			}
+			dAtA2[j1] = uint8(num)
+			j1++
 		}
-		i += n1
+		i -= j1
+		copy(dAtA[i:], dAtA2[:j1])
+		i = encodeVarintNflog(dAtA, i, uint64(j1))
+		i--
+		dAtA[i] = 0x3a
 	}
-	if len(m.GroupHash) > 0 {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintNflog(dAtA, i, uint64(len(m.GroupHash)))
-		i += copy(dAtA[i:], m.GroupHash)
-	}
-	if m.Resolved {
-		dAtA[i] = 0x20
-		i++
-		if m.Resolved {
-			dAtA[i] = 1
-		} else {
-			dAtA[i] = 0
-		}
-		i++
-	}
-	dAtA[i] = 0x2a
-	i++
-	i = encodeVarintNflog(dAtA, i, uint64(github_com_gogo_protobuf_types.SizeOfStdTime(m.Timestamp)))
-	n2, err := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.Timestamp, dAtA[i:])
-	if err != nil {
-		return 0, err
-	}
-	i += n2
 	if len(m.FiringAlerts) > 0 {
 		dAtA4 := make([]byte, len(m.FiringAlerts)*10)
 		var j3 int
@@ -318,38 +314,63 @@ func (m *Entry) MarshalTo(dAtA []byte) (int, error) {
 			dAtA4[j3] = uint8(num)
 			j3++
 		}
-		dAtA[i] = 0x32
-		i++
+		i -= j3
+		copy(dAtA[i:], dAtA4[:j3])
 		i = encodeVarintNflog(dAtA, i, uint64(j3))
-		i += copy(dAtA[i:], dAtA4[:j3])
+		i--
+		dAtA[i] = 0x32
 	}
-	if len(m.ResolvedAlerts) > 0 {
-		dAtA6 := make([]byte, len(m.ResolvedAlerts)*10)
-		var j5 int
-		for _, num := range m.ResolvedAlerts {
-			for num >= 1<<7 {
-				dAtA6[j5] = uint8(uint64(num)&0x7f | 0x80)
-				num >>= 7
-				j5++
-			}
-			dAtA6[j5] = uint8(num)
-			j5++
+	n5, err5 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.Timestamp, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.Timestamp):])
+	if err5 != nil {
+		return 0, err5
+	}
+	i -= n5
+	i = encodeVarintNflog(dAtA, i, uint64(n5))
+	i--
+	dAtA[i] = 0x2a
+	if m.Resolved {
+		i--
+		if m.Resolved {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
 		}
-		dAtA[i] = 0x3a
-		i++
-		i = encodeVarintNflog(dAtA, i, uint64(j5))
-		i += copy(dAtA[i:], dAtA6[:j5])
+		i--
+		dAtA[i] = 0x20
 	}
-	if m.XXX_unrecognized != nil {
-		i += copy(dAtA[i:], m.XXX_unrecognized)
+	if len(m.GroupHash) > 0 {
+		i -= len(m.GroupHash)
+		copy(dAtA[i:], m.GroupHash)
+		i = encodeVarintNflog(dAtA, i, uint64(len(m.GroupHash)))
+		i--
+		dAtA[i] = 0x1a
 	}
-	return i, nil
+	if m.Receiver != nil {
+		{
+			size, err := m.Receiver.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintNflog(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.GroupKey) > 0 {
+		i -= len(m.GroupKey)
+		copy(dAtA[i:], m.GroupKey)
+		i = encodeVarintNflog(dAtA, i, uint64(len(m.GroupKey)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func (m *MeshEntry) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
 	if err != nil {
 		return nil, err
 	}
@@ -357,42 +378,52 @@ func (m *MeshEntry) Marshal() (dAtA []byte, err error) {
 }
 
 func (m *MeshEntry) MarshalTo(dAtA []byte) (int, error) {
-	var i int
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *MeshEntry) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if m.Entry != nil {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintNflog(dAtA, i, uint64(m.Entry.Size()))
-		n7, err := m.Entry.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n7
-	}
-	dAtA[i] = 0x12
-	i++
-	i = encodeVarintNflog(dAtA, i, uint64(github_com_gogo_protobuf_types.SizeOfStdTime(m.ExpiresAt)))
-	n8, err := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.ExpiresAt, dAtA[i:])
-	if err != nil {
-		return 0, err
-	}
-	i += n8
 	if m.XXX_unrecognized != nil {
-		i += copy(dAtA[i:], m.XXX_unrecognized)
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
 	}
-	return i, nil
+	n7, err7 := github_com_gogo_protobuf_types.StdTimeMarshalTo(m.ExpiresAt, dAtA[i-github_com_gogo_protobuf_types.SizeOfStdTime(m.ExpiresAt):])
+	if err7 != nil {
+		return 0, err7
+	}
+	i -= n7
+	i = encodeVarintNflog(dAtA, i, uint64(n7))
+	i--
+	dAtA[i] = 0x12
+	if m.Entry != nil {
+		{
+			size, err := m.Entry.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintNflog(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
 }
 
 func encodeVarintNflog(dAtA []byte, offset int, v uint64) int {
+	offset -= sovNflog(v)
+	base := offset
 	for v >= 1<<7 {
 		dAtA[offset] = uint8(v&0x7f | 0x80)
 		v >>= 7
 		offset++
 	}
 	dAtA[offset] = uint8(v)
-	return offset + 1
+	return base
 }
 func (m *Receiver) Size() (n int) {
 	if m == nil {
@@ -479,14 +510,7 @@ func (m *MeshEntry) Size() (n int) {
 }
 
 func sovNflog(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
+	return (math_bits.Len64(x|1) + 6) / 7
 }
 func sozNflog(x uint64) (n int) {
 	return sovNflog(uint64((x << 1) ^ uint64((int64(x) >> 63))))
@@ -609,10 +633,7 @@ func (m *Receiver) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNflog
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNflog
 			}
 			if (iNdEx + skippy) > l {
@@ -972,10 +993,7 @@ func (m *Entry) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNflog
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNflog
 			}
 			if (iNdEx + skippy) > l {
@@ -1095,10 +1113,7 @@ func (m *MeshEntry) Unmarshal(dAtA []byte) error {
 			if err != nil {
 				return err
 			}
-			if skippy < 0 {
-				return ErrInvalidLengthNflog
-			}
-			if (iNdEx + skippy) < 0 {
+			if (skippy < 0) || (iNdEx+skippy) < 0 {
 				return ErrInvalidLengthNflog
 			}
 			if (iNdEx + skippy) > l {
@@ -1117,6 +1132,7 @@ func (m *MeshEntry) Unmarshal(dAtA []byte) error {
 func skipNflog(dAtA []byte) (n int, err error) {
 	l := len(dAtA)
 	iNdEx := 0
+	depth := 0
 	for iNdEx < l {
 		var wire uint64
 		for shift := uint(0); ; shift += 7 {
@@ -1148,10 +1164,8 @@ func skipNflog(dAtA []byte) (n int, err error) {
 					break
 				}
 			}
-			return iNdEx, nil
 		case 1:
 			iNdEx += 8
-			return iNdEx, nil
 		case 2:
 			var length int
 			for shift := uint(0); ; shift += 7 {
@@ -1172,55 +1186,30 @@ func skipNflog(dAtA []byte) (n int, err error) {
 				return 0, ErrInvalidLengthNflog
 			}
 			iNdEx += length
-			if iNdEx < 0 {
-				return 0, ErrInvalidLengthNflog
-			}
-			return iNdEx, nil
 		case 3:
-			for {
-				var innerWire uint64
-				var start int = iNdEx
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return 0, ErrIntOverflowNflog
-					}
-					if iNdEx >= l {
-						return 0, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					innerWire |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				innerWireType := int(innerWire & 0x7)
-				if innerWireType == 4 {
-					break
-				}
-				next, err := skipNflog(dAtA[start:])
-				if err != nil {
-					return 0, err
-				}
-				iNdEx = start + next
-				if iNdEx < 0 {
-					return 0, ErrInvalidLengthNflog
-				}
-			}
-			return iNdEx, nil
+			depth++
 		case 4:
-			return iNdEx, nil
+			if depth == 0 {
+				return 0, ErrUnexpectedEndOfGroupNflog
+			}
+			depth--
 		case 5:
 			iNdEx += 4
-			return iNdEx, nil
 		default:
 			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
 		}
+		if iNdEx < 0 {
+			return 0, ErrInvalidLengthNflog
+		}
+		if depth == 0 {
+			return iNdEx, nil
+		}
 	}
-	panic("unreachable")
+	return 0, io.ErrUnexpectedEOF
 }
 
 var (
-	ErrInvalidLengthNflog = fmt.Errorf("proto: negative length found during unmarshaling")
-	ErrIntOverflowNflog   = fmt.Errorf("proto: integer overflow")
+	ErrInvalidLengthNflog        = fmt.Errorf("proto: negative length found during unmarshaling")
+	ErrIntOverflowNflog          = fmt.Errorf("proto: integer overflow")
+	ErrUnexpectedEndOfGroupNflog = fmt.Errorf("proto: unexpected end of group")
 )
