@@ -57,8 +57,8 @@ BIN_PLATFORMS    := $(DOCKER_PLATFORMS)
 OS   := $(if $(GOOS),$(GOOS),$(shell go env GOOS))
 ARCH := $(if $(GOARCH),$(GOARCH),$(shell go env GOARCH))
 
-BASEIMAGE_PROD   ?= gcr.io/distroless/static-debian12
-BASEIMAGE_DBG    ?= debian:12
+BASEIMAGE_PROD   ?= gcr.io/distroless/static-debian13
+BASEIMAGE_DBG    ?= debian:13
 
 IMAGE            := $(REGISTRY)/$(BIN)
 VERSION_PROD     := $(VERSION)
